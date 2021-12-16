@@ -18,14 +18,13 @@ Check List:
 
 
 TODO:
-- Normal
+- Interface
 - Socket
 - SQL
--
 '''
+
 import pygame
 from pygame.locals import *
-
 
 
 class Player:
@@ -63,12 +62,14 @@ class Grille:
                 return True
         # Vertical
         for i in range(3):
-            if self.board[0][i].symbole == self.board[1][i].symbole == self.board[2][i].symbole and self.board[0][i].symbole is not None:
+            if self.board[0][i].symbole == self.board[1][i].symbole == self.board[2][i].symbole and self.board[0][
+                i].symbole is not None:
                 return True
 
         # Diagonal
         return (self.board[0][0].symbole == self.board[1][1].symbole == self.board[2][2].symbole or \
-               self.board[0][2].symbole == self.board[1][1].symbole == self.board[2][0].symbole) and self.board[1][1].symbole is not None
+                self.board[0][2].symbole == self.board[1][1].symbole == self.board[2][0].symbole) and self.board[1][
+                   1].symbole is not None
 
     def __str__(self):
         txt = "\n-------\n"
@@ -78,7 +79,7 @@ class Grille:
                 if j.symbole is None:
                     txt += " |"
                 else:
-                    txt += j.symbole+ "|"
+                    txt += j.symbole + "|"
             txt += "\n-------\n"
         return txt
 
@@ -100,8 +101,8 @@ class Jeu:
     def tourSuivant(self):
         boucleQuelleCase = True
         while boucleQuelleCase:
-            Affichage.affGrille(self.grille)
-            currentCase = input(str(self.joueurs[self.quiJoue])+": Quelle case jouer? entre [0;8] : ")
+            print(str(self.grille))
+            currentCase = input(str(self.joueurs[self.quiJoue]) + ": Quelle case jouer? entre [0;8] : ")
             if currentCase.isdigit():
                 currentCase = int(currentCase)
                 if 0 <= currentCase <= 8:
@@ -145,15 +146,49 @@ class Affichage:
         print(str(grille))
 
 
-def image(name, rotate=0, size=(32, 32)):
-    return pygame.transform.rotate(pygame.transform.scale(pygame.image.load("./images/" + name + ".png"), size), rotate)
+
+class Sprite(Rect):
+    def __init__(self, pos, size, image, name="null", collide=False):
+        super().__init__(pos[0], pos[1], size[0], size[1])
+        self.image = image
+        self.pos = pos
+        self.name = name
+        self.collide = collide
+
+    def move(self, x: float, y: float) -> Rect:
+        self.pos[0] = x
+        self.pos[1] = y
+
+    def isClicked(self):
+        mouse = pygame.mouse
+        m = mouse.get_pos()
+        return self.collidepoint(m[0], m[1]) and mouse.get_pressed()[0] and mouse.get_focused()
+
+    def isOver(self):
+        mouse = pygame.mouse
+        m = mouse.get_pos()
+        return self.collidepoint(m[0], m[1]) and mouse.get_focused()
+
+
+
+def image(name, rotate=None, size=None):
+    img = pygame.image.load("./images/" + name + ".png")
+    if size != None:
+        img = pygame.transform.scale(img, size)
+    if rotate != None:
+        img = pygame.transform.rotate(img, rotate)
+    return img
+
 
 def changeMenu(menu, sprites):
-    # menu:  0= Menu principal, 1=Selection de partie(Multi), 2=Selection de partie(Local), 3=
+    sprites.clear()
     if menu == 0:
         # Afficher les bouttons du menu principal
-        sprites.append(Sprite((50, 50), (1000, 1000), image("buttonJouer"), "jouer"))
-        pass
+        sprites.append(Sprite((100, 200), (200, 100), image("buttonJouer"), "boutton-jouer"))
+        sprites.append(Sprite((300, 200), (200, 100), image("buttonLan"), "boutton-lan"))
+        sprites.append(Sprite((100, 300), (200, 100), image("buttonMulti"), "boutton-multi"))
+        sprites.append(Sprite((300, 300), (200, 100), image("buttonQuitter"), "boutton-quitter"))
+        sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
     elif menu == 1:
         # Afficher la selection de partie (multi)
         pass
@@ -166,8 +201,6 @@ def changeMenu(menu, sprites):
     elif menu == 4:
         # Afficher le jeu
         pass
-
-
 
 
 def main():
@@ -186,12 +219,12 @@ def main_pygame():
     pygame.init()
     screen = pygame.display.set_mode((600, 600))
     pygame.display.set_caption("PyGame")
-    screen.fill((255, 255, 255))
     running = True
     sprites = []
     witchMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
     oldMenu = -1
     while running:
+        screen.fill((255, 255, 255))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -201,52 +234,24 @@ def main_pygame():
             oldMenu = witchMenu
 
         for sprite in sprites:
-            screen.blit(sprite.image, sprite.pos)
+            if "boutton" in sprite.name:
+                if sprite.isOver():
+                    sprite.size = (210, 105)
+                else:
+                    sprite.size = (200, 100)
+
+                if sprite.isClicked():
+                    if sprite.name == "boutton-quitter":
+                        running = False
+                    if sprite.name == "boutton-jouer":
+                        witchMenu = 1
+
+            screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
 
         pygame.display.update()
+        pygame.display.flip()
     pygame.quit()
-
-
-class Sprite(Rect):
-    def __init__(self, pos, size, image, name="null", collide=False):
-        super().__init__(pos[0], pos[1], size[0], size[1])
-        self.image = image
-        self.pos = pos
-        self.name = name
-        self.collide = collide
-
-    def move(self, x: float, y: float) -> Rect:
-        self.pos[0] = x
-        self.pos[1] = y
-
-    def isClicked(self):
-        return self.topleft[0] <= pygame.mouse.get_pos()[0] <= self.bottomright[0] and self.topleft[1] <= pygame.mouse.get_pos()[1] <= self.bottomright[1]
-
 
 
 if __name__ == '__main__':
     main_pygame()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
