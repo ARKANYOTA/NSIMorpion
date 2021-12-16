@@ -30,9 +30,7 @@ class GIFImage(object):
 
     def get_frames(self):
         image = self.image
-        #Added by NS  ************
         self.frames = []
-        #*************************
         pal = image.getpalette()
         base_palette = []
         for i in range(0, len(pal), 3):
@@ -59,7 +57,7 @@ class GIFImage(object):
                 except:
                     duration = 100
 
-                duration *= .001 #convert to milliseconds!
+                duration *= .001
                 
                 #Added by NS  ************
                 duration *= self.fps_scale
@@ -102,7 +100,7 @@ class GIFImage(object):
                 pi2 = pygame.Surface(image.size, SRCALPHA)
                 if cons:
                     for i in self.frames:
-                        pi2.blit(i[0], (0,0))
+                        pi2.blit(i[0], (0, 0))
                 pi2.blit(pi, (x0, y0), (x0, y0, x1-x0, y1-y0))
 
                 self.frames.append([pi2, duration])
@@ -158,7 +156,6 @@ class GIFImage(object):
     def pause(self):
         self.running = False
 
-#added by NS  ********************************
     def next_frame(self):
         if self.running:
             self.pause()

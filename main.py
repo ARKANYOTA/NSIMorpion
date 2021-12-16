@@ -25,6 +25,7 @@ TODO:
 
 import pygame
 from pygame.locals import *
+from GIFImage import GIFImage
 
 
 class Player:
@@ -189,6 +190,7 @@ def changeMenu(menu, sprites):
         sprites.append(Sprite((100, 300), (200, 100), image("buttonMulti"), "boutton-multi"))
         sprites.append(Sprite((300, 300), (200, 100), image("buttonQuitter"), "boutton-quitter"))
         sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
+        sprites.append(Sprite((0, 400), (400, 200), GIFImage("./images/button.gif"), "title"))
     elif menu == 1:
         # Afficher la selection de partie (multi)
         pass
@@ -223,7 +225,9 @@ def main_pygame():
     sprites = []
     witchMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
     oldMenu = -1
+    ticks = 0
     while running:
+        ticks += 1
         screen.fill((255, 255, 255))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -246,7 +250,17 @@ def main_pygame():
                     if sprite.name == "boutton-jouer":
                         witchMenu = 1
 
-            screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
+            if isinstance(sprite.image, GIFImage):
+                if sprite.image.frames == None or sprite.image.frames == []:
+                    sprite.image.get_frames()
+
+                if ticks % 100 == 0:
+                    print(sprite.image.cur)
+                    print(sprite.image.frames[sprite.image.cur][0])
+                    sprite.image.next_frame()
+                screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size), sprite.pos)
+            else:
+                screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
 
         pygame.display.update()
         pygame.display.flip()
