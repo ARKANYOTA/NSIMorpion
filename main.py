@@ -1,6 +1,22 @@
 '''
 Mail Prof: CoulombNSI@gmail.com
 
+Check List:
+    - Créer une nouvelle classe qui va gérer tous les affichages et demandes (input()). Il
+    est important qu’un objet soit responsable d’effectuer des tâches qui le concerne
+    uniquement. L’affichage et les demandes d’informations se feront par
+    l'intermédiaire d’une autre classe qu’il sera inutile d’instancier. Les méthodes de
+    cette classe seront alors statiques (rechercher sur le web ce que cela signifie).
+    - Faire une interface graphique avec l’outil de votre choix. Vous pouvez utiliser les
+    bibliothèques pygame ou tkinter.
+    - Avoir la possibilité de jouer contre l’ordinateur. A vous de choisir les stratégies de
+    jeu de l’ordinateur.
+    - Gérer les joueurs dans une base de données (comme vu en TP) et pouvoir noter les
+    scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
+    - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus
+    longues ou schéma en particulier)
+
+
 TODO:
 - Normal
 - Socket
@@ -73,6 +89,7 @@ class Jeu:
         self.grille = Grille()
         self.quiJoue = False  # False est equivalant à 0
         self.compteur = 0
+        self.coupsJouer = []
 
     def joueur(self):
         return self.joueurs[self.quiJoue]
@@ -83,7 +100,7 @@ class Jeu:
     def tourSuivant(self):
         boucleQuelleCase = True
         while boucleQuelleCase:
-            print(str(self.grille))
+            Affichage.affGrille(self.grille)
             currentCase = input(str(self.joueurs[self.quiJoue])+": Quelle case jouer? entre [0;8] : ")
             if currentCase.isdigit():
                 currentCase = int(currentCase)
@@ -92,21 +109,41 @@ class Jeu:
                         self.grille.changerValeur(currentCase, self.joueur().symbole)
                         self.changerJoueur()
                         self.compteur += 1
+                        self.coupsJouer.append(currentCase)
                         boucleQuelleCase = False
                     else:
                         print("Cette case est déjà prise!")
                 else:
                     print("Cette case n'existe pas!")
+            elif currentCase == "r":  # Revenir en arrière
+                if len(self.coupsJouer) != 0:
+                    self.grille.changerValeur(self.coupsJouer[-1], None)
+                    self.changerJoueur()
+                    self.compteur -=1
+                    self.coupsJouer.pop()
+                    boucleQuelleCase = False
+                else:
+                    print('Aucun coup a annuler')
             else:
                 print("Veuillez entrer un chiffre entre [0;8] !")
 
     def jouer(self):
-        while not self.grille.isGagnant():
+        while not (self.grille.isGagnant() or self.compteur == 9):
             self.tourSuivant()
 
         print(str(self.grille))
-        self.quiJoue = not self.quiJoue
-        print(f"{str(self.joueur())} a gagné!")
+        if self.grille.isGagnant():
+            self.quiJoue = not self.quiJoue
+            print(f"{str(self.joueur())} a gagné!")
+            return None
+        print(f"égalité: Personne a gagner")
+
+
+class Affichage:
+    @classmethod
+    def affGrille(cls, grille):
+        print(str(grille))
+
 
 def image(name, rotate=0, size=(32, 32)):
     return pygame.transform.rotate(pygame.transform.scale(pygame.image.load("./images/" + name + ".png"), size), rotate)
