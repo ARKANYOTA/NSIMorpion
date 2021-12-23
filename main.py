@@ -217,7 +217,10 @@ def main():
         joueur2 = Player(input("Joueur 2: Quel est ton nom? : "), "O")
         jeu = Jeu(joueur1, joueur2)
         jeu.jouer()
-        if input("Voulez-vous rejouer? [y/n] : ") == "y":
+        rep = input("Voulez-vous rejouer? [y/n] : ")
+        while not (rep == 'y' or rep == 'n'):
+            rep = input("Voulez-vous rejouer? [y/n] : ")
+        if  rep == "y":
             continue
         else:
             break
@@ -228,10 +231,10 @@ def main_pygame():
     pygame.font.init()
 
     screen = pygame.display.set_mode((600, 600))
-    pygame.display.set_caption("PyGame")
+    pygame.display.set_caption("Le jeu des croix et des ronds")
     running = True
     sprites = []
-    witchMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
+    whichMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
     oldMenu = -1
     ticks = 0
     while running:
@@ -241,16 +244,16 @@ def main_pygame():
             if event.type == pygame.QUIT:
                 running = False
 
-        if witchMenu != oldMenu:  # Menu de Jeu
-            changeMenu(witchMenu, sprites)
-            oldMenu = witchMenu
+        if whichMenu != oldMenu:  # Menu de Jeu
+            changeMenu(whichMenu, sprites)
+            oldMenu = whichMenu
 
         for sprite in sprites:
             if sprite.isClicked():
                 if sprite.name == "boutton-quitter":
                     running = False
                 if sprite.name == "boutton-jouer":
-                    witchMenu = 1
+                    whichMenu = 1
 
             if isinstance(sprite.image, GIFImage):
                 if sprite.image.frames == None or sprite.image.frames == []:
