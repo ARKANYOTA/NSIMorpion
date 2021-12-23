@@ -188,54 +188,84 @@ def image(name, rotate=None, size=None):
     return img
 
 
-def changeMenu(menu, sprites):
-    sprites.clear()
-    if menu == 0:
-        # Afficher les bouttons du menu principal
-        sprites.append(Button((100, 200), (150, 75), "Jouer", "Comic Sans MS", "boutton-jouer"))
-        sprites.append(Button((300, 200), (150, 75), "1v1", "Comic Sans MS", "boutton-1v1"))
-        sprites.append(Button((100, 300), (150, 75), "Multi", "Comic Sans MS", "boutton-multi"))
-        sprites.append(Button((300, 300), (150, 75), "Quitter", "Comic Sans MS", "boutton-quitter"))
-        sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
-    elif menu == 1:
-        # Jouer contre IA
-        pass
-    elif menu == 2:
-        pass
-    elif menu == 3:
-        pass
-    elif menu == 4:
-        pass
+class Game:
+    def __init__(self):
+        pygame.init()
+        pygame.font.init()
 
-def mainMenu(screen, sprites, ticks):
-    for sprite in sprites:
-        if sprite.isClicked():
-            if sprite.name == "boutton-quitter":
-                running = False
-            if sprite.name == "boutton-jouer":
-                whichMenu = 1
+        self.screen = pygame.display.set_mode((600, 600))
+        pygame.display.set_caption("Le jeu des croix et des ronds")
+        self.running = True
+        self.sprites = []
+        self.whichMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
+        self.oldMenu = -1
+        self.ticks = 0
+        while self.running:
+            self.ticks += 1
+            self.screen.fill((255, 255, 255))
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
 
-        if isinstance(sprite.image, GIFImage):
-            if sprite.image.frames == None or sprite.image.frames == []:
-                sprite.image.get_frames()
+            if self.whichMenu != self.oldMenu:  # Menu de Jeu
+                self.changeMenu()
+                self.oldMenu = self.whichMenu
 
-            if ticks % 10 == 0:
-                if sprite.isOver():
-                    sprite.image.next_frame()
-                elif sprite.image.cur >= 1:
-                    sprite.image.prev_frame()
+            if self.whichMenu == 0:
+                self.mainMenu()
 
-            if isinstance(sprite, Button):
-                textsurface = pygame.font.SysFont(sprite.font, int(90 / len(sprite.text))).render(sprite.text, False, (220, 220, 220))
-                y = 3
-                if sprite.text == "1v1":
-                    y = -7
-                if sprite.text == "Quitter":
-                    y = 6
-                sprite.image.frames[sprite.image.cur][0].blit(textsurface, ((sprite.size[0] - textsurface.get_size()[0]) // 16, y))
-            screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size), sprite.pos)
-        else:
-            screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
+            pygame.display.update()
+            pygame.display.flip()
+        pygame.quit()
+
+    def changeMenu(self):
+        self.sprites.clear()
+        if self.whichMenu == 0:
+            # Afficher les bouttons du menu principal
+            self.sprites.append(Button((100, 200), (150, 75), "Jouer", "Comic Sans MS", "boutton-jouer"))
+            self.sprites.append(Button((300, 200), (150, 75), "1v1", "Comic Sans MS", "boutton-1v1"))
+            self.sprites.append(Button((100, 300), (150, 75), "Multi", "Comic Sans MS", "boutton-multi"))
+            self.sprites.append(Button((300, 300), (150, 75), "Quitter", "Comic Sans MS", "boutton-quitter"))
+            self.sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
+        elif self.whichMenu == 1:
+            # Jouer contre IA
+            pass
+        elif self.whichMenu == 2:
+            pass
+        elif self.whichMenu == 3:
+            pass
+        elif self.whichMenu == 4:
+            pass
+
+    def mainMenu(self):
+        for sprite in self.sprites:
+            if sprite.isClicked():
+                if sprite.name == "boutton-quitter":
+                    self.running = False
+                if sprite.name == "boutton-jouer":
+                    self.whichMenu = 1
+
+            if isinstance(sprite.image, GIFImage):
+                if sprite.image.frames == None or sprite.image.frames == []:
+                    sprite.image.get_frames()
+
+                if self.ticks % 10 == 0:
+                    if sprite.isOver():
+                        sprite.image.next_frame()
+                    elif sprite.image.cur >= 1:
+                        sprite.image.prev_frame()
+
+                if isinstance(sprite, Button):
+                    textsurface = pygame.font.SysFont(sprite.font, int(90 / len(sprite.text))).render(sprite.text, False, (220, 220, 220))
+                    y = 3
+                    if sprite.text == "1v1":
+                        y = -7
+                    if sprite.text == "Quitter":
+                        y = 6
+                    sprite.image.frames[sprite.image.cur][0].blit(textsurface, ((sprite.size[0] - textsurface.get_size()[0]) // 16, y))
+                self.screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size), sprite.pos)
+            else:
+                self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
 
 
 def main():
@@ -253,35 +283,7 @@ def main():
             break
 
 
-def main_pygame():
-    pygame.init()
-    pygame.font.init()
-
-    screen = pygame.display.set_mode((600, 600))
-    pygame.display.set_caption("Le jeu des croix et des ronds")
-    running = True
-    sprites = []
-    whichMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
-    oldMenu = -1
-    ticks = 0
-    while running:
-        ticks += 1
-        screen.fill((255, 255, 255))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        if whichMenu != oldMenu:  # Menu de Jeu
-            changeMenu(whichMenu, sprites)
-            oldMenu = whichMenu
-
-        if whichMenu == 0:
-            mainMenu(screen, sprites, ticks)
-
-        pygame.display.update()
-        pygame.display.flip()
-    pygame.quit()
 
 
 if __name__ == '__main__':
-    main_pygame()
+    game = Game()
