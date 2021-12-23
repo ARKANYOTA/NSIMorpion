@@ -170,6 +170,13 @@ class Sprite(Rect):
         m = mouse.get_pos()
         return self.collidepoint(m[0], m[1]) and mouse.get_focused()
 
+class Button(Sprite):
+    def __init__(self, pos: tuple, size: tuple, text: str='', font: str='Comic Sans MS', name: str="null", collide: bool=False):
+        super(Button, self).__init__(pos, size, GIFImage("./images/button.gif"), name, collide)
+        self.text = text
+        self.font = font
+
+
 
 
 def image(name, rotate=None, size=None):
@@ -185,12 +192,11 @@ def changeMenu(menu, sprites):
     sprites.clear()
     if menu == 0:
         # Afficher les bouttons du menu principal
-        sprites.append(Sprite((100, 200), (200, 100), image("buttonJouer"), "boutton-jouer"))
-        sprites.append(Sprite((300, 200), (200, 100), image("buttonLan"), "boutton-lan"))
-        sprites.append(Sprite((100, 300), (200, 100), image("buttonMulti"), "boutton-multi"))
-        sprites.append(Sprite((300, 300), (200, 100), image("buttonQuitter"), "boutton-quitter"))
+        sprites.append(Button((100, 200), (150, 75), "Jouer", "Comic Sans MS", "boutton-jouer"))
+        sprites.append(Button((300, 200), (150, 75), "Lan", "Comic Sans MS", "boutton-lan"))
+        sprites.append(Button((100, 300), (150, 75), "Multi", "Comic Sans MS", "boutton-multi"))
+        sprites.append(Button((300, 300), (150, 75), "Quitter", "Comic Sans MS", "boutton-quitter"))
         sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
-        sprites.append(Sprite((0, 400), (400, 200), GIFImage("./images/button.gif"), "title"))
     elif menu == 1:
         # Afficher la selection de partie (multi)
         pass
@@ -219,6 +225,8 @@ def main():
 
 def main_pygame():
     pygame.init()
+    pygame.font.init()
+
     screen = pygame.display.set_mode((600, 600))
     pygame.display.set_caption("PyGame")
     running = True
@@ -238,26 +246,25 @@ def main_pygame():
             oldMenu = witchMenu
 
         for sprite in sprites:
-            if "boutton" in sprite.name:
-                if sprite.isOver():
-                    sprite.size = (210, 105)
-                else:
-                    sprite.size = (200, 100)
-
-                if sprite.isClicked():
-                    if sprite.name == "boutton-quitter":
-                        running = False
-                    if sprite.name == "boutton-jouer":
-                        witchMenu = 1
+            if sprite.isClicked():
+                if sprite.name == "boutton-quitter":
+                    running = False
+                if sprite.name == "boutton-jouer":
+                    witchMenu = 1
 
             if isinstance(sprite.image, GIFImage):
                 if sprite.image.frames == None or sprite.image.frames == []:
                     sprite.image.get_frames()
 
-                if ticks % 100 == 0:
-                    print(sprite.image.cur)
-                    print(sprite.image.frames[sprite.image.cur][0])
-                    sprite.image.next_frame()
+                if ticks % 10 == 0:
+                    if sprite.isOver():
+                        sprite.image.next_frame()
+                    elif sprite.image.cur >= 1:
+                        sprite.image.prev_frame()
+
+                if isinstance(sprite, Button):
+                    textsurface = pygame.font.SysFont(sprite.font, int(100 / len(sprite.text))).render(sprite.text, False, (220, 220, 220))
+                    sprite.image.frames[sprite.image.cur][0].blit(textsurface, (0, 0))
                 screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size), sprite.pos)
             else:
                 screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
