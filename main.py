@@ -22,6 +22,8 @@ TODO:
 - Socket
 - SQL
 '''
+import math
+import random
 
 import pygame
 from pygame.locals import *
@@ -69,7 +71,7 @@ class Grille:
                 return True
 
         # Diagonal
-        return (self.board[0][0].symbole == self.board[1][1].symbole == self.board[2][2].symbole or \
+        return (self.board[0][0].symbole == self.board[1][1].symbole == self.board[2][2].symbole or
                 self.board[0][2].symbole == self.board[1][1].symbole == self.board[2][0].symbole) and self.board[1][
                    1].symbole is not None
 
@@ -157,7 +159,8 @@ class Sprite(Rect):
     def isClicked(self):
         mouse = pygame.mouse
         m = mouse.get_pos()
-        return self.collidepoint(m[0], m[1]) and mouse.get_pressed()[0] and mouse.get_focused()
+        return self.collidepoint(m[0], m[1]) and (
+                mouse.get_pressed()[0] or mouse.get_pressed()[1] or mouse.get_pressed()[2]) and mouse.get_focused()
 
     def isOver(self):
         mouse = pygame.mouse
@@ -172,20 +175,71 @@ class Button(Sprite):
         self.text = text
         self.font = font
 
+    def afficher(self, screen):
+        img = pygame.transform.scale(self.image.frames[self.image.cur][0], self.size)
+        textsurface = pygame.font.SysFont(self.font, 50).render(self.text,False,(100, 100, 100))
+
+        x_percent = (img.get_size()[0] * 0.9) / textsurface.get_size()[0]
+        textsurface = pygame.transform.scale(textsurface, ((textsurface.get_size()[0] * x_percent), (textsurface.get_size()[1] * x_percent)))
+
+        if textsurface.get_size()[1] > img.get_size()[1]:
+            y_percent = (img.get_size()[1] * 0.9) / textsurface.get_size()[1]
+            textsurface = pygame.transform.scale(textsurface, ((textsurface.get_size()[0] * y_percent), (textsurface.get_size()[1] * y_percent)))
+
+        screen.blit(pygame.transform.scale(self.image.frames[self.image.cur][0], self.size), self.pos)
+        screen.blit(textsurface, (self.pos[0] + (self.size[0] - textsurface.get_size()[0]) // 2,
+                                       self.pos[1] + (self.size[1] - textsurface.get_size()[1]) // 2))
+
 
 def image(name, rotate=None, size=None):
     img = pygame.image.load("./images/" + name + ".png")
-    if size != None:
+    if size is not None:
         img = pygame.transform.scale(img, size)
-    if rotate != None:
+    if rotate is not None:
         img = pygame.transform.rotate(img, rotate)
     return img
+
+
+class Grid:
+    def __init__(self):
+        self.board = [[0 for j in range(3)] for i in range(3)]
+
+    def is_empty(self, i, j):
+        return self.board[i][j] == 0
+
+    def get_value(self, i, j):
+        return self.board[i][j]
+
+    def change_value(self, i, j, value):
+        return self.board[i].__setitem__(j, value)
+
+    def clear(self):
+        self.board = [[0 for j in range(3)] for i in range(3)]
+
+    def is_winner(self):
+        # Horizontal
+        for i in range(3):
+            if self.board[i][0] == self.board[i][1] == self.board[i][2] != 0:
+                return True
+
+        # Vertical
+        for j in range(3):
+            if self.board[0][j] == self.board[1][j] == self.board[2][j] != 0:
+                return True
+
+        # Diagonal
+        return (self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[0][2] == self.board[1][1] ==
+                self.board[2][0]) and self.board[1][1] != 0
 
 
 class Game:
     def __init__(self):
         pygame.init()
         pygame.font.init()
+
+        self.grid = Grid()
+        self.playing = 1
+        self.finished = False
 
         self.screen = pygame.display.set_mode((600, 600))
         pygame.display.set_caption("Le jeu des croix et des ronds")
@@ -227,23 +281,31 @@ class Game:
             # Jouer contre IA
             pass
         elif self.whichMenu == 2:
-            print(pygame.display.get_surface().get_size())
-
             # 1v1 Local
             for i in range(3):
                 for j in range(3):
                     size_of_case = 100
-                    taille_a_gauche = (pygame.display.get_surface().get_size()[0]-3*size_of_case)//2
+                    taille_a_gauche = (pygame.display.get_surface().get_size()[0] - 3 * size_of_case) // 2
                     self.sprites.append(
                         Sprite((taille_a_gauche + i * size_of_case, 200 + j * size_of_case),
-                        (size_of_case, size_of_case), image("case"),
-                        "case-" + str(i) + "-" + str(j))
+                               (size_of_case, size_of_case), image("case"),
+                               "case-" + str(i) + "-" + str(j))
                     )
-                    
+
         elif self.whichMenu == 3:
             pass
         elif self.whichMenu == 4:
             pass
+
+    def restart(self):
+        self.grid.clear()
+        self.finished = False
+        self.playing = -1 ** random.randint(1, 3)
+        for sprite in self.sprites:
+            if 'case' in sprite.name:
+                sprite.image = image('case')
+            elif 'Button' in sprite.name:
+                self.sprites.remove(sprite)
 
     def mainMenu(self):
         for sprite in self.sprites:
@@ -257,7 +319,7 @@ class Game:
 
             # Faudrait move ce truc autre part car il se repette sur tout les Game Main
             if isinstance(sprite.image, GIFImage):
-                if sprite.image.frames == None or sprite.image.frames == []:
+                if sprite.image.frames is None or sprite.image.frames == []:
                     sprite.image.get_frames()
 
                 if self.ticks % 10 == 0:
@@ -267,31 +329,14 @@ class Game:
                         sprite.image.prev_frame()
 
                 if isinstance(sprite, Button):
-                    textsurface = pygame.font.SysFont(sprite.font, int(90 / len(sprite.text))).render(sprite.text,
-                                                                                                      False,
-                                                                                                      (220, 220, 220))
-                    y = 3
-                    if sprite.text == "1v1":
-                        y = -7
-                    if sprite.text == "Quitter":
-                        y = 6
-                    sprite.image.frames[sprite.image.cur][0].blit(textsurface, (
-                        (sprite.size[0] - textsurface.get_size()[0]) // 16, y))
-                self.screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size),
-                                 sprite.pos)
+                    sprite.afficher(self.screen)
             else:
                 self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
 
     def main1v1(self):
         for sprite in self.sprites:
-            if sprite.isClicked():
-                for i in range(3):
-                    for j in range(3):
-                        if sprite.name == "case-" + str(i) + "-" + str(j):
-                            sprite.image = image("casecroix")
-
-            if isinstance(sprite.image, GIFImage):
-                if sprite.image.frames == None or sprite.image.frames == []:
+            if 'Button' in sprite.name:
+                if sprite.image.frames is None or sprite.image.frames == []:
                     sprite.image.get_frames()
 
                 if self.ticks % 10 == 0:
@@ -300,21 +345,41 @@ class Game:
                     elif sprite.image.cur >= 1:
                         sprite.image.prev_frame()
 
-                if isinstance(sprite, Button):
-                    textsurface = pygame.font.SysFont(sprite.font, int(90 / len(sprite.text))).render(sprite.text,
-                                                                                                      False,
-                                                                                                      (220, 220, 220))
-                    y = 3
-                    if sprite.text == "1v1":
-                        y = -7
-                    if sprite.text == "Quitter":
-                        y = 6
-                    sprite.image.frames[sprite.image.cur][0].blit(textsurface, (
-                        (sprite.size[0] - textsurface.get_size()[0]) // 16, y))
-                self.screen.blit(pygame.transform.scale(sprite.image.frames[sprite.image.cur][0], sprite.size),
-                                 sprite.pos)
-            else:
+            if sprite.isClicked():
+                if sprite.name == 'Restart-Button':
+                    self.restart()
+                elif sprite.name == 'Return-Button':
+                    self.finished = False
+                    self.whichMenu = 0
+                    self.playing = -1
+                    self.grid.clear()
+                elif 'case-' in sprite.name and not self.finished:
+                    t = sprite.name.replace('case-', '').split('-')
+                    i, j = int(t[0]), int(t[1])
+                    if self.grid.is_empty(i, j):
+                        if self.playing == 1:
+                            sprite.image = image('casecroix')
+                        else:
+                            sprite.image = image('caseronds')
+                        self.grid.change_value(i, j, self.playing)
+                        if self.grid.is_winner():
+                            self.sprites.append(Button((120, 120), (150, 75), 'Rejouer', name='Restart-Button'))
+                            self.sprites.append(Button((320, 120), (150, 75), 'Retour', name='Return-Button'))
+                            self.finished = True
+                        else:
+                            self.playing *= -1
+
+            if isinstance(sprite.image, pygame.Surface):
                 self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
+            else:
+                sprite.afficher(self.screen)
+
+        if self.finished:
+            txt = 'Joueur ' + str(self.playing + 1) + ' a gagné !'
+            text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+            for i in range(len(txt)):
+                self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
+                                 (180 + (15 * i), 50 + (5 * math.sin((self.ticks // 8) + (i * 5)))))
 
 
 def main():
