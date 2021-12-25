@@ -1,11 +1,9 @@
-
 import math
 import random
 
 import pygame
 from pygame.locals import *
 from GIFImage import GIFImage
-
 
 '''
 Mail Prof: CoulombNSI@gmail.com
@@ -25,6 +23,7 @@ Check List:
     - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus
     longues ou schéma en particulier)
 '''
+
 
 class Sprite(Rect):
     def __init__(self, pos, size, image, name="null", collide=False):
@@ -130,8 +129,10 @@ class Game:
 
         self.grid = Grid()
         self.playing = 1
+        self.difficulty = 0
         self.finished = False
         self.clicked = True
+        self.ai = False
         self.won = False
 
         self.screen = pygame.display.set_mode((600, 600))
@@ -155,8 +156,10 @@ class Game:
 
             if self.whichMenu == 0:
                 self.mainMenu()
-            if self.whichMenu == 2:
-                self.main1v1()
+            elif self.whichMenu == 1:
+                self.aiMenu()
+            elif self.whichMenu == 2:
+                self.versusMenu()
 
             pygame.display.update()
             pygame.display.flip()
@@ -173,7 +176,11 @@ class Game:
             self.sprites.append(Sprite((100, 0), (400, 200), Sprite.image("Title"), "title"))
         elif self.whichMenu == 1:
             # Jouer contre IA
-            pass
+            self.sprites.append(Button((80, 150), (200, 100), 'Facile', name='button-easy'))
+            self.sprites.append(Button((320, 150), (200, 100), 'Normale', name='button-normal'))
+            self.sprites.append(Button((200, 270), (200, 100), 'Difficile', name='button-hard'))
+            self.sprites.append(Sprite((self.screen.get_size()[0] * 0.9, 5), (50, 50),
+                                       Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 2:
             # 1v1 Local
             for i in range(3):
@@ -195,6 +202,7 @@ class Game:
     def restart(self):
         self.grid.clear()
         self.finished = False
+        self.won = False
         self.playing = -1 ** random.randint(0, 2)
 
         to_clear = []
@@ -215,11 +223,12 @@ class Game:
                 if sprite.name == "boutton-jouer":
                     self.whichMenu = 1
                 if sprite.name == "boutton-1v1":
+                    self.playing = (-1) ** random.randint(0, 1)
                     self.whichMenu = 2
 
             # Faudrait move ce truc autre part car il se repette sur tout les Game Main
             if isinstance(sprite.image, GIFImage):
-                if self.ticks % 10 == 0:
+                if self.ticks % 4 == 0:
                     if sprite.isOver():
                         sprite.image.next_frame()
                     elif sprite.image.cur >= 1:
@@ -230,20 +239,35 @@ class Game:
             else:
                 self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
 
-    def main1v1(self):
+    def versusMenu(self):
         for sprite in self.sprites:
             if sprite.name == 'button-restart':
-                if self.ticks % 10 == 0:
+                if self.ticks % 4 == 0:
                     if sprite.isOver():
                         sprite.image.next_frame()
                     elif sprite.image.cur >= 1:
                         sprite.image.prev_frame()
 
-            if sprite.isClicked():
+            if self.ai and self.playing == -1 and not (self.grid.is_winner() or self.grid.is_full()):
+                if self.difficulty == 0:
+                    self.playEasy()
+                elif self.difficulty == 1:
+                    self.playNormal()
+                elif self.difficulty == 2:
+                    self.playHard()
+
+                if self.grid.is_winner() or self.grid.is_full():
+                    self.sprites.append(Button((230, 120), (150, 75), 'Rejouer', name='button-restart'))
+                    self.won = self.grid.is_winner()
+                    self.finished = True
+
+            if sprite.isClicked() and (not self.ai or self.playing == 1):
                 if sprite.name == 'button-restart':
                     self.restart()
                 elif sprite.name == 'button-return':
                     self.finished = False
+                    self.won = False
+                    self.ai = False
                     self.whichMenu = 0
                     self.playing = 1
                     self.grid.clear()
@@ -261,7 +285,7 @@ class Game:
 
                         self.grid.change_value(i, j, self.playing)
                         if self.grid.is_winner() or self.grid.is_full():
-                            self.sprites.append(Button((220, 120), (150, 75), 'Rejouer', name='button-restart'))
+                            self.sprites.append(Button((230, 120), (150, 75), 'Rejouer', name='button-restart'))
                             self.won = self.grid.is_winner()
                             self.finished = True
                         else:
@@ -284,7 +308,7 @@ class Game:
             text_surface = pygame.font.SysFont("Comic Sans MS", 20)
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
-                                 (180 + (15 * i), 50 + (5 * math.sin((self.ticks // 8) + (i * 5)))))
+                                 (180 + (15 * i), 50 + (5 * math.sin((self.ticks // 4) + (i * 5)))))
         elif self.finished:
             text_surface = pygame.font.SysFont("Comic Sans MS", 30)
             self.screen.blit(text_surface.render("Il n'y a eu aucun gagnants !", False, (0, 0, 0)), (120, 60))
@@ -292,6 +316,67 @@ class Game:
             text_surface = pygame.font.SysFont("Comic Sans MS", 20)
             self.screen.blit(text_surface.render("C'est au tour du joueur " + str(player), False, (0, 0, 0)), (50, 20))
             self.screen.blit(img, (300, 20))
+
+    def aiMenu(self):
+        text_surface = pygame.font.SysFont('Comic Sans MS', 30)
+        txt = text_surface.render("Choisissez la difficulté de l'IA", False, (0, 0, 0))
+        self.screen.blit(txt, (90, 80))
+
+        for sprite in self.sprites:
+            if isinstance(sprite.image, pygame.Surface):
+                self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
+            else:
+                if self.ticks % 4 == 0:
+                    if sprite.isOver():
+                        sprite.image.next_frame()
+                    elif sprite.image.cur != 0:
+                        sprite.image.prev_frame()
+                sprite.afficher(self.screen)
+
+            if sprite.isClicked():
+                sprite.clicked = True
+            elif sprite.isOver() and sprite.clicked:
+                if sprite.name == 'button-return':
+                    self.whichMenu = 0
+                elif sprite.name == 'button-easy':
+                    self.playing = (-1) ** random.randint(0, 1)
+                    self.difficulty = 0
+                    self.whichMenu = 2
+                    self.ai = True
+                elif sprite.name == 'button-normal':
+                    self.playing = (-1) ** random.randint(0, 1)
+                    self.difficulty = 1
+                    self.whichMenu = 2
+                    self.ai = True
+                elif sprite.name == 'button-hard':
+                    self.playing = (-1) ** random.randint(0, 1)
+                    self.difficulty = 2
+                    self.whichMenu = 2
+                    self.ai = True
+
+    def playEasy(self):
+        self.playing *= -1
+        i = random.randint(0, 2)
+        j = random.randint(0, 2)
+        while self.grid.get_value(i, j) != 0:
+            i = random.randint(0, 2)
+            j = random.randint(0, 2)
+        self.grid.change_value(i, j, -1)
+
+        sprite = None
+        for s in self.sprites:
+            if s.name == 'case-' + str(i) + '-' + str(j):
+                sprite = s
+                break
+
+        self.sprites.append(Sprite((sprite.pos[0] + (sprite.size[0] * 0.1), sprite.pos[1] + (sprite.size[1] * 0.1)),
+                                   (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image('cross'), name='temp'))
+
+    def playNormal(self):
+        pass
+
+    def playHard(self):
+        pass
 
 
 if __name__ == '__main__':
