@@ -1,3 +1,12 @@
+
+import math
+import random
+
+import pygame
+from pygame.locals import *
+from GIFImage import GIFImage
+
+
 '''
 Mail Prof: CoulombNSI@gmail.com
 
@@ -15,144 +24,18 @@ Check List:
     scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
     - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus
     longues ou schéma en particulier)
-
-
-TODO:
-- Interface
-- Socket
-- SQL
 '''
-import math
-import random
-
-import pygame
-from pygame.locals import *
-from GIFImage import GIFImage
-
-
-class Player:
-    def __init__(self, name, symbole):
-        self.name = name
-        self.symbole = symbole
-
-    def __str__(self):
-        return f"{self.name} ({self.symbole})"
-
-
-class Case:
-    def __init__(self, pos):
-        self.pos = pos
-        self.symbole = None
-
-    def __str__(self):
-        print(self.symbole)
-
-
-class Grille:
-    def __init__(self):
-        self.board = [[Case(0), Case(1), Case(2)], [Case(3), Case(4), Case(5)], [Case(6), Case(7), Case(8)]]
-
-    def estVide(self, pos):
-        return self.board[pos // 3][pos % 3].symbole is None
-
-    def changerValeur(self, pos, symbole):
-        self.board[pos // 3][pos % 3].symbole = symbole
-
-    def isGagnant(self):
-        # Horizontal
-        for i in range(3):
-            if self.board[i][0].symbole == self.board[i][1].symbole == self.board[i][2].symbole and self.board[i][
-                0].symbole is not None:
-                return True
-        # Vertical
-        for i in range(3):
-            if self.board[0][i].symbole == self.board[1][i].symbole == self.board[2][i].symbole and self.board[0][
-                i].symbole is not None:
-                return True
-
-        # Diagonal
-        return (self.board[0][0].symbole == self.board[1][1].symbole == self.board[2][2].symbole or
-                self.board[0][2].symbole == self.board[1][1].symbole == self.board[2][0].symbole) and self.board[1][
-                   1].symbole is not None
-
-    def __str__(self):
-        txt = "\n-------\n"
-        for i in self.board:
-            txt += "|"
-            for j in i:
-                if j.symbole is None:
-                    txt += " |"
-                else:
-                    txt += j.symbole + "|"
-            txt += "\n-------\n"
-        return txt
-
-
-class Jeu:
-    def __init__(self, joueur1, joueur2):
-        self.joueurs = [joueur1, joueur2]
-        self.grille = Grille()
-        self.quiJoue = False  # False est equivalant à 0
-        self.compteur = 0
-        self.coupsJouer = []
-
-    def joueur(self):
-        return self.joueurs[self.quiJoue]
-
-    def changerJoueur(self):
-        self.quiJoue = not self.quiJoue
-
-    def tourSuivant(self):
-        boucleQuelleCase = True
-        while boucleQuelleCase:
-            print(str(self.grille))
-            currentCase = input(str(self.joueurs[self.quiJoue]) + ": Quelle case jouer? entre [0;8] : ")
-            if currentCase.isdigit():
-                currentCase = int(currentCase)
-                if 0 <= currentCase <= 8:
-                    if self.grille.estVide(currentCase):
-                        self.grille.changerValeur(currentCase, self.joueur().symbole)
-                        self.changerJoueur()
-                        self.compteur += 1
-                        self.coupsJouer.append(currentCase)
-                        boucleQuelleCase = False
-                    else:
-                        print("Cette case est déjà prise!")
-                else:
-                    print("Cette case n'existe pas!")
-            elif currentCase == "r":  # Revenir en arrière
-                if len(self.coupsJouer) != 0:
-                    self.grille.changerValeur(self.coupsJouer[-1], None)
-                    self.changerJoueur()
-                    self.compteur -= 1
-                    self.coupsJouer.pop()
-                    boucleQuelleCase = False
-                else:
-                    print('Aucun coup a annuler')
-            else:
-                print("Veuillez entrer un chiffre entre [0;8] !")
-
-    def jouer(self):
-        while not (self.grille.isGagnant() or self.compteur == 9):
-            self.tourSuivant()
-
-        print(str(self.grille))
-        if self.grille.isGagnant():
-            self.quiJoue = not self.quiJoue
-            print(f"{str(self.joueur())} a gagné!")
-            return None
-        print(f"égalité: Personne a gagner")
-
 
 class Sprite(Rect):
     def __init__(self, pos, size, image, name="null", collide=False):
         super().__init__(pos[0], pos[1], size[0], size[1])
+        self.clicked = False
         self.image = image
         self.pos = pos
         self.name = name
         self.collide = collide
 
-    def move(self, x: float, y: float) -> Rect:
+    def move(self, x: float, y: float):
         self.pos[0] = x
         self.pos[1] = y
 
@@ -167,42 +50,45 @@ class Sprite(Rect):
         m = mouse.get_pos()
         return self.collidepoint(m[0], m[1]) and mouse.get_focused()
 
+    @staticmethod
+    def image(name, rotate=None, size=None):
+        img = pygame.image.load("./images/" + name + ".png")
+        if size is not None:
+            img = pygame.transform.scale(img, size)
+        if rotate is not None:
+            img = pygame.transform.rotate(img, rotate)
+        return img
+
 
 class Button(Sprite):
     def __init__(self, pos: tuple, size: tuple, text: str = '', font: str = 'Comic Sans MS', name: str = "null",
                  collide: bool = False):
         super(Button, self).__init__(pos, size, GIFImage("./images/button.gif"), name, collide)
+        self.image.get_frames()
         self.text = text
         self.font = font
 
     def afficher(self, screen):
         img = pygame.transform.scale(self.image.frames[self.image.cur][0], self.size)
-        textsurface = pygame.font.SysFont(self.font, 50).render(self.text,False,(100, 100, 100))
+        text_surface = pygame.font.SysFont(self.font, 50).render(self.text, False, (100, 100, 100))
 
-        x_percent = (img.get_size()[0] * 0.9) / textsurface.get_size()[0]
-        textsurface = pygame.transform.scale(textsurface, ((textsurface.get_size()[0] * x_percent), (textsurface.get_size()[1] * x_percent)))
+        x_percent = (img.get_size()[0] * 0.9) / text_surface.get_size()[0]
+        text_surface = pygame.transform.scale(text_surface, (
+            (text_surface.get_size()[0] * x_percent), (text_surface.get_size()[1] * x_percent)))
 
-        if textsurface.get_size()[1] > img.get_size()[1]:
-            y_percent = (img.get_size()[1] * 0.9) / textsurface.get_size()[1]
-            textsurface = pygame.transform.scale(textsurface, ((textsurface.get_size()[0] * y_percent), (textsurface.get_size()[1] * y_percent)))
+        if text_surface.get_size()[1] > img.get_size()[1]:
+            y_percent = (img.get_size()[1] * 0.9) / text_surface.get_size()[1]
+            text_surface = pygame.transform.scale(text_surface, (
+                (text_surface.get_size()[0] * y_percent), (text_surface.get_size()[1] * y_percent)))
 
         screen.blit(pygame.transform.scale(self.image.frames[self.image.cur][0], self.size), self.pos)
-        screen.blit(textsurface, (self.pos[0] + (self.size[0] - textsurface.get_size()[0]) // 2,
-                                       self.pos[1] + (self.size[1] - textsurface.get_size()[1]) // 2))
-
-
-def image(name, rotate=None, size=None):
-    img = pygame.image.load("./images/" + name + ".png")
-    if size is not None:
-        img = pygame.transform.scale(img, size)
-    if rotate is not None:
-        img = pygame.transform.rotate(img, rotate)
-    return img
+        screen.blit(text_surface, (self.pos[0] + (self.size[0] - text_surface.get_size()[0]) // 2,
+                                   self.pos[1] + (self.size[1] - text_surface.get_size()[1]) // 2))
 
 
 class Grid:
     def __init__(self):
-        self.board = [[0 for j in range(3)] for i in range(3)]
+        self.board = [[0 for _ in range(3)] for _ in range(3)]
 
     def is_empty(self, i, j):
         return self.board[i][j] == 0
@@ -214,7 +100,12 @@ class Grid:
         return self.board[i].__setitem__(j, value)
 
     def clear(self):
-        self.board = [[0 for j in range(3)] for i in range(3)]
+        self.board = [[0 for _ in range(3)] for _ in range(3)]
+
+    def is_full(self):
+        return self.board[0][0] != 0 and self.board[0][1] != 0 and self.board[0][2] != 0 and \
+               self.board[1][0] != 0 and self.board[1][1] != 0 and self.board[1][2] != 0 and \
+               self.board[2][0] != 0 and self.board[2][1] != 0 and self.board[2][2] != 0
 
     def is_winner(self):
         # Horizontal
@@ -240,6 +131,8 @@ class Game:
         self.grid = Grid()
         self.playing = 1
         self.finished = False
+        self.clicked = True
+        self.won = False
 
         self.screen = pygame.display.set_mode((600, 600))
         pygame.display.set_caption("Le jeu des croix et des ronds")
@@ -248,6 +141,7 @@ class Game:
         self.whichMenu = 0  # 0 = menu principal, 1 = Menu de selection, 2 = Menu de jeu
         self.oldMenu = -1
         self.ticks = 0
+
         while self.running:
             self.ticks += 1
             self.screen.fill((255, 255, 255))
@@ -276,7 +170,7 @@ class Game:
             self.sprites.append(Button((300, 200), (150, 75), "1v1", "Comic Sans MS", "boutton-1v1"))
             self.sprites.append(Button((100, 300), (150, 75), "Multi", "Comic Sans MS", "boutton-multi"))
             self.sprites.append(Button((300, 300), (150, 75), "Quitter", "Comic Sans MS", "boutton-quitter"))
-            self.sprites.append(Sprite((100, 0), (400, 200), image("Title"), "title"))
+            self.sprites.append(Sprite((100, 0), (400, 200), Sprite.image("Title"), "title"))
         elif self.whichMenu == 1:
             # Jouer contre IA
             pass
@@ -288,10 +182,11 @@ class Game:
                     taille_a_gauche = (pygame.display.get_surface().get_size()[0] - 3 * size_of_case) // 2
                     self.sprites.append(
                         Sprite((taille_a_gauche + i * size_of_case, 200 + j * size_of_case),
-                               (size_of_case, size_of_case), image("case"),
+                               (size_of_case, size_of_case), Sprite.image("case"),
                                "case-" + str(i) + "-" + str(j))
                     )
-
+            self.sprites.append(Sprite((self.screen.get_size()[0] * 0.9, 5), (50, 50),
+                                       Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 3:
             pass
         elif self.whichMenu == 4:
@@ -300,16 +195,21 @@ class Game:
     def restart(self):
         self.grid.clear()
         self.finished = False
-        self.playing = -1 ** random.randint(1, 3)
+        self.playing = -1 ** random.randint(0, 2)
+
+        to_clear = []
         for sprite in self.sprites:
-            if 'case' in sprite.name:
-                sprite.image = image('case')
-            elif 'Button' in sprite.name:
-                self.sprites.remove(sprite)
+            if sprite.name == 'button-restart' or sprite.name == 'temp':
+                to_clear.append(sprite)
+
+        for sprite in to_clear:
+            self.sprites.remove(sprite)
 
     def mainMenu(self):
         for sprite in self.sprites:
-            if sprite.isClicked():
+            sprite.clicked = sprite.isClicked() or sprite.clicked
+            if not sprite.isClicked() and sprite.clicked:
+                sprite.clicked = False
                 if sprite.name == "boutton-quitter":
                     self.running = False
                 if sprite.name == "boutton-jouer":
@@ -319,9 +219,6 @@ class Game:
 
             # Faudrait move ce truc autre part car il se repette sur tout les Game Main
             if isinstance(sprite.image, GIFImage):
-                if sprite.image.frames is None or sprite.image.frames == []:
-                    sprite.image.get_frames()
-
                 if self.ticks % 10 == 0:
                     if sprite.isOver():
                         sprite.image.next_frame()
@@ -335,10 +232,7 @@ class Game:
 
     def main1v1(self):
         for sprite in self.sprites:
-            if 'Button' in sprite.name:
-                if sprite.image.frames is None or sprite.image.frames == []:
-                    sprite.image.get_frames()
-
+            if sprite.name == 'button-restart':
                 if self.ticks % 10 == 0:
                     if sprite.isOver():
                         sprite.image.next_frame()
@@ -346,25 +240,29 @@ class Game:
                         sprite.image.prev_frame()
 
             if sprite.isClicked():
-                if sprite.name == 'Restart-Button':
+                if sprite.name == 'button-restart':
                     self.restart()
-                elif sprite.name == 'Return-Button':
+                elif sprite.name == 'button-return':
                     self.finished = False
                     self.whichMenu = 0
-                    self.playing = -1
+                    self.playing = 1
                     self.grid.clear()
                 elif 'case-' in sprite.name and not self.finished:
                     t = sprite.name.replace('case-', '').split('-')
                     i, j = int(t[0]), int(t[1])
                     if self.grid.is_empty(i, j):
                         if self.playing == 1:
-                            sprite.image = image('casecroix')
+                            img = 'circle'
                         else:
-                            sprite.image = image('caseronds')
+                            img = 'cross'
+                        self.sprites.append(
+                            Sprite((sprite.pos[0] + (sprite.size[0] * 0.1), sprite.pos[1] + (sprite.size[1] * 0.1)),
+                                   (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image(img), name='temp'))
+
                         self.grid.change_value(i, j, self.playing)
-                        if self.grid.is_winner():
-                            self.sprites.append(Button((120, 120), (150, 75), 'Rejouer', name='Restart-Button'))
-                            self.sprites.append(Button((320, 120), (150, 75), 'Retour', name='Return-Button'))
+                        if self.grid.is_winner() or self.grid.is_full():
+                            self.sprites.append(Button((220, 120), (150, 75), 'Rejouer', name='button-restart'))
+                            self.won = self.grid.is_winner()
                             self.finished = True
                         else:
                             self.playing *= -1
@@ -374,27 +272,26 @@ class Game:
             else:
                 sprite.afficher(self.screen)
 
-        if self.finished:
-            txt = 'Joueur ' + str(self.playing + 1) + ' a gagné !'
+        if self.playing == 1:
+            player = 1
+            img = Sprite.image('circle', size=(30, 30))
+        else:
+            player = 2
+            img = Sprite.image('cross', size=(30, 30))
+
+        if self.won:
+            txt = 'Joueur ' + str(player) + ' a gagné !'
             text_surface = pygame.font.SysFont("Comic Sans MS", 20)
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
                                  (180 + (15 * i), 50 + (5 * math.sin((self.ticks // 8) + (i * 5)))))
-
-
-def main():
-    while True:
-        joueur1 = Player(input("Joueur 1: Quel est ton nom? : "), "X")
-        joueur2 = Player(input("Joueur 2: Quel est ton nom? : "), "O")
-        jeu = Jeu(joueur1, joueur2)
-        jeu.jouer()
-        rep = input("Voulez-vous rejouer? [y/n] : ")
-        while not (rep == 'y' or rep == 'n'):
-            rep = input("Voulez-vous rejouer? [y/n] : ")
-        if rep == "y":
-            continue
+        elif self.finished:
+            text_surface = pygame.font.SysFont("Comic Sans MS", 30)
+            self.screen.blit(text_surface.render("Il n'y a eu aucun gagnants !", False, (0, 0, 0)), (120, 60))
         else:
-            break
+            text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+            self.screen.blit(text_surface.render("C'est au tour du joueur " + str(player), False, (0, 0, 0)), (50, 20))
+            self.screen.blit(img, (300, 20))
 
 
 if __name__ == '__main__':
