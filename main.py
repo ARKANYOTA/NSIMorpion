@@ -9,19 +9,13 @@ from GIFImage import GIFImage
 Mail Prof: CoulombNSI@gmail.com
 
 Check List:
-    - Créer une nouvelle classe qui va gérer tous les affichages et demandes (input()). Il
-    est important qu’un objet soit responsable d’effectuer des tâches qui le concerne
-    uniquement. L’affichage et les demandes d’informations se feront par
-    l'intermédiaire d’une autre classe qu’il sera inutile d’instancier. Les méthodes de
-    cette classe seront alors statiques (rechercher sur le web ce que cela signifie).
-    - Faire une interface graphique avec l’outil de votre choix. Vous pouvez utiliser les
-    bibliothèques pygame ou tkinter.
-    - Avoir la possibilité de jouer contre l’ordinateur. A vous de choisir les stratégies de
-    jeu de l’ordinateur.
-    - Gérer les joueurs dans une base de données (comme vu en TP) et pouvoir noter les
-    scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
-    - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus
-    longues ou schéma en particulier)
+    - Créer une nouvelle classe qui va gérer tous les affichages et demandes (input()). Il est important qu’un objet 
+    soit responsable d’effectuer des tâches qui le concerne uniquement. L’affichage et les demandes d’informations se 
+    feront par l'intermédiaire d’une autre classe qu’il sera inutile d’instancier. Les méthodes de cette classe seront 
+    alors statiques (rechercher sur le web ce que cela signifie).
+    - Avoir la possibilité de jouer contre l’ordinateur. A vous de choisir les stratégies de jeu de l’ordinateur.
+    - Gérer les joueurs dans une base de données (comme vu en TP) et pouvoir noter les scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
+    - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus longues ou schéma en particulier)
 '''
 
 
@@ -120,6 +114,25 @@ class Grid:
         # Diagonal
         return (self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[0][2] == self.board[1][1] ==
                 self.board[2][0]) and self.board[1][1] != 0
+
+
+class PygameFunctions:
+    @staticmethod
+    def has_won(grid):
+        # -1 = player 1, 0 = no one, 1 = player 2
+        for i in range(3):
+            if grid[i][0] == grid[i][1] == grid[i][2] != 0:
+                return grid[i][0]
+
+                # Vertical
+        for j in range(3):
+            if grid[0][j] == grid[1][j] == grid[2][j] != 0:
+                return grid[0][j]
+
+        # Diagonal
+        if (grid[0][0] == grid[1][1] == grid[2][2] or grid[0][2] == grid[1][1] == grid[2][0]) and grid[1][1] != 0:
+            return grid[1][1]
+        return 0
 
 
 class Game:
@@ -373,9 +386,40 @@ class Game:
                                    (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image('cross'), name='temp'))
 
     def playNormal(self):
-        pass
+        self.playing *= -1
+        # Si il y'en a 2 alignée alors On peut en placer un troisieme
+
+        i = random.randint(0, 2)
+        j = random.randint(0, 2)
+        while self.grid.get_value(i, j) != 0:
+            i = random.randint(0, 2)
+            j = random.randint(0, 2)
+
+        new_grid = self.grid
+        for a in range(3):
+            for b in range(3):
+                if new_grid.get_value(a, b) == 0:
+                    for d in [1, -1]:  # On vérifie en premier si on peut bloquer puis si on peut gagner (On = le bot) car si la 2e action est vrai elle écrasera la premiere
+                        new_grid.change_value(a, b, d)
+                        if new_grid.is_winner():
+                            i, j = a, b
+                    new_grid.change_value(a, b, 0)
+
+        self.grid.change_value(i, j, -1)
+        sprite = None
+        for s in self.sprites:
+            if s.name == 'case-' + str(i) + '-' + str(j):
+                sprite = s
+                break
+
+        self.sprites.append(Sprite((sprite.pos[0] + (sprite.size[0] * 0.1), sprite.pos[1] + (sprite.size[1] * 0.1)),
+                                   (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image('cross'), name='temp'))
+
+        # self.sprites.append(Sprite((sprite.pos[0] + (sprite.size[0] * 0.1), sprite.pos[1] + (sprite.size[1] * 0.1)),
+        # (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image('cross'), name='temp'))
 
     def playHard(self):
+        # minamax
         pass
 
 
