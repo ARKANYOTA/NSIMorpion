@@ -173,8 +173,7 @@ class MultiGame:
 running = True
 local = '192.168.56.1'
 public = '91.165.38.233'
-host, port = local, 5050
-client = Client(host, port)
+client = Client(public, 5050)
 player = input('Entrez votre pseudo:  ')
 while running:
     cmd = input('Commande:  ').lower()

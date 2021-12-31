@@ -96,6 +96,7 @@ class Server:
                             g.started = False
                             g.again.clear()
                             g.grid.clear()
+                            g.grid.last = [-1, -1]
                         else:
                             Game.games.remove(g)
                     else:

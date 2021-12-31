@@ -624,7 +624,9 @@ class Game:
                     self.won = self.grid.is_winner()
                     self.finished = True
 
-            if sprite.isClicked() and (not self.ai or self.playing == 1):
+            sprite.clicked = sprite.isClicked() or sprite.clicked
+            if not sprite.isClicked() and sprite.clicked (not self.ai or self.playing == 1):
+                sprite.clicked = False
                 if sprite.name == 'button-restart':
                     self.restart()
                 elif sprite.name == 'button-return':
@@ -694,9 +696,9 @@ class Game:
                     sprite.image.prev_frame()
                 sprite.afficher(self.screen)
 
-            if sprite.isClicked():
-                sprite.clicked = True
-            elif sprite.isOver() and sprite.clicked:
+            sprite.clicked = sprite.isClicked() or sprite.clicked
+            if not sprite.isClicked() and sprite.clicked:
+                sprite.clicked = False
                 if sprite.name == 'button-return':
                     self.whichMenu = 0
                 elif sprite.name == 'button-easy':
@@ -733,7 +735,9 @@ class Game:
                     sprite.image.prev_frame()
                 sprite.afficher(self.screen)
 
-            if sprite.isClicked():
+            sprite.clicked = sprite.isClicked() or sprite.clicked
+            if not sprite.isClicked() and sprite.clicked:
+                sprite.clicked = False
                 if sprite.name == 'button-return' and not self.creation:
                     self.whichMenu = 0
                     self.client.close()
@@ -780,7 +784,9 @@ class Game:
                 elif sprite.image.cur >= 1:
                     sprite.image.prev_frame()
 
-            if sprite.isClicked():
+            sprite.clicked = sprite.isClicked() or sprite.clicked
+            if not sprite.isClicked() and sprite.clicked:
+                sprite.clicked = False
                 if sprite.name == 'button-restart':
                     multi.again(self.pseudo)
                 elif sprite.name == 'button-return':
