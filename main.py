@@ -1,6 +1,7 @@
 import math
 import random
 import socket
+import sys
 
 import pygame
 from pygame.locals import *
@@ -40,7 +41,7 @@ class Sprite(Rect):
         return self.collidepoint(m[0], m[1]) and mouse.get_focused()
 
     @staticmethod
-    def image(name, rotate=None, size=None):
+    def image(name, rotate=None, size=None) -> pygame.Surface:
         img = pygame.image.load("./images/" + name + ".png")
         if size is not None:
             img = pygame.transform.scale(img, size)
@@ -97,7 +98,7 @@ class InputBox:
             if self.active:
                 if event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
-                elif len(self.text) <= 10:
+                elif len(self.text) < 10 and event.unicode != '$':
                     self.text += event.unicode
                 self.txt_surface = self.font.render(self.text, True, self.color)
 
@@ -452,7 +453,7 @@ class Game:
         self.ticks = 0
 
         self.game_name = 'game name'
-        self.pseudo = 'pseudo'
+        self.pseudo = f'pseudo-{random.randint(1000, 9999)}'
         self.creation = False
         self.started = False
         self.full = False
@@ -529,7 +530,7 @@ class Game:
         elif self.whichMenu == 3:
             local = '192.168.56.1'
             public = '91.165.38.233'
-            self.client = Client(local, 5050)
+            self.client = Client(public, 5050)
             self.sprites.append(Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
                                        (400, 100), 'Créez une partie', name='button-create'))
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
@@ -911,4 +912,8 @@ class Game:
 
 
 if __name__ == '__main__':
-    game = Game()
+    if "--t" in sys.argv:  # Pour pouvoir faire python3 main.py --t pour lancer la version terminal
+        import default
+        default.main()
+    else:
+        game = Game()

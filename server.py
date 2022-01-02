@@ -75,7 +75,7 @@ class Server:
                     game, player = msg.replace('join$', '', 1).split('$')
                     g = Game.getGameByName(game)
                     if g is not None:
-                        if len(g.players) < 2:
+                        if len(g.players) < 2 and not player in g.players:
                             g.players.append(player)
                             conn.send((f"joined${game}${player}").encode(self.format))
 
