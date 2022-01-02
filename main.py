@@ -6,17 +6,10 @@ import pygame
 from pygame.locals import *
 from GIFImage import GIFImage
 
-from math import inf as infinity
-
 '''
 Mail Prof: CoulombNSI@gmail.com
 
 Check List:
-    - Créer une nouvelle classe qui va gérer tous les affichages et demandes (input()). Il est important qu’un objet 
-    soit responsable d’effectuer des tâches qui le concerne uniquement. L’affichage et les demandes d’informations se 
-    feront par l'intermédiaire d’une autre classe qu’il sera inutile d’instancier. Les méthodes de cette classe seront 
-    alors statiques (rechercher sur le web ce que cela signifie).
-    - Avoir la possibilité de jouer contre l’ordinateur. A vous de choisir les stratégies de jeu de l’ordinateur.
     - Gérer les joueurs dans une base de données (comme vu en TP) et pouvoir noter les scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
     - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus longues ou schéma en particulier)
 '''
@@ -518,7 +511,6 @@ class Game:
             # Jouer contre IA
             self.sprites.append(Button((80, 150), (200, 100), 'Facile', name='button-easy'))
             self.sprites.append(Button((320, 150), (200, 100), 'Normale', name='button-normal'))
-            self.sprites.append(Button((200, 270), (200, 100), 'Difficile', name='button-hard'))
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 2:
@@ -616,8 +608,6 @@ class Game:
                     self.playEasy()
                 elif self.difficulty == 1:
                     self.playNormal()
-                elif self.difficulty == 2:
-                    self.playHard()
 
                 if self.grid.is_winner() or self.grid.is_full():
                     self.sprites.append(Button((230, 120), (150, 75), 'Rejouer', name='button-restart'))
@@ -625,7 +615,7 @@ class Game:
                     self.finished = True
 
             sprite.clicked = sprite.isClicked() or sprite.clicked
-            if not sprite.isClicked() and sprite.clicked (not self.ai or self.playing == 1):
+            if not sprite.isClicked() and sprite.clicked and (not self.ai or self.playing == 1):
                 sprite.clicked = False
                 if sprite.name == 'button-restart':
                     self.restart()
@@ -917,156 +907,7 @@ class Game:
                                    (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
 
 
-    # def minimax(self, grid, player):
-        """
-        done = grid.is_winner()  # Si le jeu est fini
-        matchnul = grid.is_full() and not done # Si le jeu est nul
-        who_win = grid.who_won()  # Quel joueur a gagné -1, 1 ou 0:personne
-        if done:
-            return who_win
-        if matchnul:
-            return 0
-        moves = []
-        empty_cells = []
-        for i in range(3):
-            for j in range(3):
-                if grid.get_value(i, j) == 0:
-                    empty_cells.append(i*3+j)
-
-        for empty_cell in empty_cells:
-            move = {}
-            move['index'] = empty_cell
-            new_grid = grid.copy()
-            new_grid.change_value(empty_cell // 3, empty_cell % 3, player)
-
-            if player == -1:
-                result = self.minimax(new_grid, 1)
-                move['score'] = result
-            else:
-                result = self.minimax(new_grid, -1)
-                move['score'] = result
-            moves.append(move)
-
-        best_move = None
-        if player == -1:
-            best = -infinity
-            for move in moves:
-                if move['score'] > best:
-                    best = move['score']
-                    best_move = move['index']
-        else:
-            best = infinity
-            for move in moves:
-                if move['score'] < best:
-                    best = move['score']
-                    best_move = move['index']
-
-        return best_move
-        """
-
-    def minimax(self, grid, depth, isMax):
-        score = grid.who_won()
-        if (score != 0):  # Si le plateau est ganant
-            return score
-
-        if (grid.is_full()):  # Si le plateau est plein
-            return 0
-
-        # If this maximizer's move
-        if (isMax):
-            best = -100
-
-            # Traverse all cells
-            for i in range(3):
-                for j in range(3):
-
-                    # Check if cell is empty
-                    if (grid.get_value(i, j) == 0):
-                        # Make the move
-                        grid.change_value(i, j, 1)
-
-                        # Call minimax recursively and choose
-                        # the maximum value
-                        best = max(best, self.minimax(grid, depth + 1, not isMax))
-                        # Undo the move
-                        grid.change_value(i, j, 0)
-            return best
-
-        # If this minimizer's move
-        else:
-            best = 100
-
-            # Traverse all cells
-            for i in range(3):
-                for j in range(3):
-
-                    # Check if cell is empty
-                    if (grid.get_value(i, j) == 0):
-                        # Make the move
-                        grid.change_value(i, j, -1)
-
-                        # Call minimax recursively and choose
-                        # the minimum value
-                        best = min(best, self.minimax(grid, depth + 1, not isMax))
-                        # Undo the move
-                        self.grid.change_value(i, j, 0)
-            return best
-
-    def position_hard(self):
-        if self.grid.grid_is_empty():
-            # On prend la case centrale si on joue en premier
-            return 1,1
-        else:
-            # On voit si on peut gagner en 1 coup
-            for a in range(3):
-                for b in range(3):
-                    if self.grid.get_value(a, b) == 0:
-                        self.grid.change_value(a, b, -1)
-                        if self.grid.is_winner():
-                            self.grid.change_value(a, b, 0)
-                            return a, b
-                        self.grid.change_value(a, b, 0)
-
         return None, None
-
-    def playHard(self):
-        # minamax
-        # Tableau des possibilitées
-        # https://github.com/NathanFallet/MorpionTPE/blob/master/MorpionPy/game.py
-        # Reel ia: https://kongakura.fr/article?id=Cr%C3%A9er_une_I.A_qui_apprend_toute_seule_%C3%A0_jouer_au_morpion
-        self.playing *= -1
-
-        i, j = self.position_hard()
-
-        if i is None:
-            bestmove = (0, 0)
-            score_of_best_move = -100000
-            for a, b in self.grid.list_positions_empty():
-                new_grid = self.grid.copy()
-                new_grid.change_value(a, b, -1)
-                score = self.minimax(new_grid, 0, True)
-                print(score, a, b)
-                if score > score_of_best_move:
-                    bestmove = (a, b)
-                    score_of_best_move = score
-
-            # l = self.grid.list_positions_empty()
-            i, j = bestmove[0], bestmove[1]
-            #random.choice(l)
-
-        # On choisit une case au hasard au cas ou minmax ne trouve pas de meilleur coup
-        # l = self.grid.list_positions_empty()
-        # i, j = random.choice(l)
-
-        self.grid.change_value(i, j, -1)
-        sprite = None
-        for s in self.sprites:
-            if s.name == 'case-' + str(i) + '-' + str(j):
-                sprite = s
-                break
-
-        self.sprites.append(Sprite((sprite.pos[0] + (sprite.size[0] * 0.1), sprite.pos[1] + (sprite.size[1] * 0.1)),
-                                   (sprite.size[0] * 0.8, sprite.size[1] * 0.8), Sprite.image('cross'), name='temp'))
 
 
 if __name__ == '__main__':
