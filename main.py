@@ -71,7 +71,9 @@ class Button(Sprite):
             text_surface = pygame.transform.scale(text_surface, (
                 int(text_surface.get_size()[0] * y_percent), int(text_surface.get_size()[1] * y_percent)))
 
-        screen.blit(pygame.transform.scale(self.image.frames[self.image.cur][0], (int(self.size[0]), int(self.size[1]))), (int(self.pos[0]), int(self.pos[1])))
+        screen.blit(
+            pygame.transform.scale(self.image.frames[self.image.cur][0], (int(self.size[0]), int(self.size[1]))),
+            (int(self.pos[0]), int(self.pos[1])))
         screen.blit(text_surface, (int(self.pos[0]) + int(self.size[0] - text_surface.get_size()[0]) // 2,
                                    int(self.pos[1]) + int(self.size[1] - text_surface.get_size()[1]) // 2))
 
@@ -103,11 +105,11 @@ class InputBox:
                 self.txt_surface = self.font.render(self.text, True, self.color)
 
     def update(self):
-        width = max(self.rect.w, self.txt_surface.get_width()+30)
+        width = max(self.rect.w, self.txt_surface.get_width() + 30)
         self.rect.w = width
 
     def draw(self, screen):
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+        screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
@@ -229,7 +231,8 @@ class Client:
                 if sprite.name == f'case-{i}-{j}':
                     game.sprites.append(
                         Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img), name=f'sp-{i}-{j}'))
+                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img),
+                               name=f'sp-{i}-{j}'))
                     break
 
     def not_played(self, game, player, i, j, winner, full):
@@ -258,7 +261,8 @@ class Client:
                 if sprite.name == f'case-{i}-{j}':
                     game.sprites.append(
                         Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img), name=f'sp-{i}-{j}'))
+                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img),
+                               name=f'sp-{i}-{j}'))
                     break
 
     def cant_play(self, game, player, i, j, winner, full):
@@ -281,7 +285,8 @@ class Client:
                 if sprite.name == f'case-{i}-{j}':
                     game.sprites.append(
                         Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img), name=f'sp-{i}-{j}'))
+                               (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img),
+                               name=f'sp-{i}-{j}'))
                     break
 
     def not_exist(self, game, player):
@@ -405,7 +410,8 @@ class Grid:
                 return self.board[0][j]
 
         # Diagonal
-        if (self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[0][2] == self.board[1][1] == self.board[2][0]) and self.board[1][1] != 0:
+        if (self.board[0][0] == self.board[1][1] == self.board[2][2] or self.board[0][2] == self.board[1][1] ==
+            self.board[2][0]) and self.board[1][1] != 0:
             return self.board[1][1]
         return 0
 
@@ -417,13 +423,13 @@ class Grid:
                     l.append((i, j))
         return l
 
-
     def copy(self):
         g = Grid()
         for i in range(3):
             for j in range(3):
                 g.board[i][j] = self.board[i][j]
         return g
+
 
 class Game:
     game = None
@@ -512,6 +518,7 @@ class Game:
             # Jouer contre IA
             self.sprites.append(Button((80, 150), (200, 100), 'Facile', name='button-easy'))
             self.sprites.append(Button((320, 150), (200, 100), 'Normale', name='button-normal'))
+            self.sprites.append(Button((200, 270), (200, 100), 'Difficile', name='button-hard'))
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 2:
@@ -531,8 +538,9 @@ class Game:
             local = '192.168.56.1'
             public = '91.165.38.233'
             self.client = Client(public, 5050)
-            self.sprites.append(Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
-                                       (400, 100), 'Créez une partie', name='button-create'))
+            self.sprites.append(
+                Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
+                       (400, 100), 'Créez une partie', name='button-create'))
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
             self.updateGames()
@@ -609,6 +617,8 @@ class Game:
                     self.playEasy()
                 elif self.difficulty == 1:
                     self.playNormal()
+                elif self.difficulty == 2:
+                    self.playHard()
 
                 if self.grid.is_winner() or self.grid.is_full():
                     self.sprites.append(Button((230, 120), (150, 75), 'Rejouer', name='button-restart'))
@@ -635,8 +645,9 @@ class Game:
                         else:
                             img = 'cross'
                         self.sprites.append(
-                            Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img), name='temp'))
+                            Sprite(
+                                (sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
+                                (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image(img), name='temp'))
 
                         self.grid.change_value(i, j, self.playing)
                         if self.grid.is_winner() or self.grid.is_full():
@@ -849,7 +860,7 @@ class Game:
         for game in MultiGame.games:
             if len(game.players) == 1 and self.getSpriteByName(f'button-join-{game.name}') == None:
                 self.sprites.insert(len(self.sprites) - 1, Button((50 + 170 * (i % 3), 100 + 85 * (i // 3)), (150, 75),
-                                           game.name, name=f'button-join-{game.name}'))
+                                                                  game.name, name=f'button-join-{game.name}'))
                 i += 1
 
     def countCurrentGames(self):
@@ -878,8 +889,9 @@ class Game:
                 sprite = s
                 break
 
-        self.sprites.append(Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
+        self.sprites.append(
+            Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
 
     def playNormal(self):
         self.playing *= -1
@@ -904,9 +916,64 @@ class Game:
                 sprite = s
                 break
 
-        self.sprites.append(Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
+        self.sprites.append(
+            Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
 
+        return None, None
+
+    def HardChoosePos(self):
+        if self.grid.grid_is_empty():
+            return 1, 1
+
+        # On vérifie en premier si on peut bloquer puis si on peut gagner (On = le bot) car si la 2e action est vrai elle écrasera la premiere
+        for d in [-1, 1]:
+            for a in range(3):
+                for b in range(3):
+                    if self.grid.get_value(a, b) == 0:
+                        self.grid.change_value(a, b, d)
+                        if self.grid.is_winner():
+                            return a, b
+                        self.grid.change_value(a, b, 0)
+
+        if self.grid.get_value(1, 1) == 0:
+            return 1, 1
+        bestpos = [-1, -1, -1000]
+        for i, j in self.grid.list_positions_empty():
+            new_grid = self.grid.copy()
+            new_grid.change_value(i, j, -1)
+            if new_grid.is_winner():
+                return i, j
+            points = 0
+            for i2, j2 in new_grid.list_positions_empty():
+                nnew_grid = new_grid.copy()
+                nnew_grid.change_value(i2, j2, 1)
+                if nnew_grid.is_winner():
+                    points -= 1
+                elif nnew_grid.is_full():
+                    pass
+                for i3, j3 in nnew_grid.list_positions_empty():
+                    nnnew_grid = nnew_grid.copy()
+                    nnnew_grid.change_value(i3, j3, -1)
+                    if nnnew_grid.is_winner():
+                        points += 1
+            if points > bestpos[2]:
+                bestpos = [i, j, points]
+        return bestpos[0], bestpos[1]
+
+    def playHard(self):
+        self.playing *= -1
+        i, j = self.HardChoosePos()
+        self.grid.change_value(i, j, -1)
+        sprite = None
+        for s in self.sprites:
+            if s.name == 'case-' + str(i) + '-' + str(j):
+                sprite = s
+                break
+
+        self.sprites.append(
+            Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
 
         return None, None
 
@@ -914,6 +981,7 @@ class Game:
 if __name__ == '__main__':
     if "--t" in sys.argv:  # Pour pouvoir faire python3 main.py --t pour lancer la version terminal
         import default
+
         default.main()
     else:
         game = Game()
