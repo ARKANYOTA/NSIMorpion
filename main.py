@@ -6,6 +6,7 @@ import string
 import sys
 
 import os
+# Permet de cacher le message pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 import pygame
