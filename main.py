@@ -5,6 +5,9 @@ import string
 
 import sys
 
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
 import pygame
 from pygame.locals import *
 from GIFImage import GIFImage
@@ -560,9 +563,9 @@ class Game:
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 3:
-            local = '192.168.56.1'
+            local = '172.20.10.12'
             public = '91.165.38.233'
-            self.client = Client(public, 5050)
+            self.client = Client(local, 5050)
             self.sprites.append(
                 Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
                        (400, 100), 'Créez une partie', name='button-create'))

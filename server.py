@@ -48,7 +48,8 @@ class Server:
         self.server.bind(self.addr)
 
     def handle_client(self, conn, addr):
-        print(f"[NEW CONNECTION] {addr} connected.")
+        if debug:
+            print(f"[NEW CONNECTION] {addr} connected.")
 
         connected = True
         while connected:
@@ -56,7 +57,8 @@ class Server:
             if msg_length:
                 msg_length = int(msg_length)
                 msg = str(conn.recv(msg_length).decode(self.format))
-                print(f"[{addr}] {msg}")
+                if debug:
+                    print(f"[{addr}] {msg}")
                 if msg == self.disc_message:
                     connected = False
                 elif msg == 'games':
@@ -162,14 +164,16 @@ class Server:
 
     def start(self):
         self.server.listen()
-        print(f"[LISTENING] Server is listening on {self.host}")
+        if debug:
+            print(f"[LISTENING] Server is listening on {self.host}")
         while True:
             conn, addr = self.server.accept()
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
-            print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+            if debug:
+                print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
 
-
+debug = False
 server = Server('0.0.0.0', 5050)
 print("[STARTING] server is starting...")
 server.start()
