@@ -6,6 +6,7 @@ import string
 import sys
 
 import os
+
 # Permet de cacher le message pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -18,6 +19,7 @@ class Sprite(Rect):
     pygame.font.init()
     FONT_30 = pygame.font.Font('./font/Roboto-Regular.ttf', 30)
     FONT_20 = pygame.font.Font('./font/Roboto-Regular.ttf', 20)
+
     def __init__(self, pos, size, image, name="null", collide=False):
         super().__init__(pos[0], pos[1], size[0], size[1])
         self.clicked = False
@@ -52,7 +54,8 @@ class Sprite(Rect):
 
 
 class Button(Sprite):
-    def __init__(self, pos: tuple, size: tuple, text: str = '', font: str = './font/Roboto-Regular.ttf', name: str = "null",
+    def __init__(self, pos: tuple, size: tuple, text: str = '', font: str = './font/Roboto-Regular.ttf',
+                 name: str = "null",
                  collide: bool = False):
         super(Button, self).__init__(pos, size, GIFImage("./images/button.gif"), name, collide)
         self.image.get_frames()
@@ -252,7 +255,6 @@ class Client:
     def restart(self, game, player):
         pass
 
-
     def can_play(self, game, player, i, j):
         game: Game = Game.game
         multi: MultiGame = MultiGame.getGameByName(game.game_name)
@@ -263,7 +265,6 @@ class Client:
         game.won = False
         game.full = False
         game.playing = 1
-
 
         if multi is not None and game.pseudo in multi.players and multi.players.index(game.pseudo) == 0:
             img = 'circle'
@@ -551,9 +552,9 @@ class Game:
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 3:
-            local = '172.20.10.12'
+            local = '172.20.10.2'
             public = '91.165.38.233'
-            self.client = Client(local, 5050)
+            self.client = Client(public, 5050)
             self.sprites.append(
                 Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
                        (400, 100), 'Créez une partie', name='button-create'))
@@ -868,7 +869,6 @@ class Game:
                 self.screen.blit(text_surface.render(f"Adversaire: {multi.players[1]}", False, (0, 0, 0)), (50, 75))
             else:
                 self.screen.blit(text_surface.render(f"Adversaire: {multi.players[0]}", False, (0, 0, 0)), (50, 75))
-
 
     def updateGames(self):
         MultiGame.getGamesList(self.client)
