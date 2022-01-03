@@ -12,14 +12,6 @@ import pygame
 from pygame.locals import *
 from GIFImage import GIFImage
 
-'''
-Mail Prof: CoulombNSI@gmail.com
-
-Check List:
-    - Gérer les joueurs dans une base de données (comme vu en TP) et pouvoir noter les scores et tenir à jour un tableau de joueurs ayant les meilleurs résultats au jeu.
-    - Pouvoir changer la taille de la grille et les conditions de victoires (lignes plus longues ou schéma en particulier)
-'''
-
 
 class Sprite(Rect):
     pygame.font.init()
@@ -233,6 +225,7 @@ class Client:
 
         if winner and game.winner == 0:
             game.winner = 1
+
         game.won = winner
         game.full = full
         game.playing *= -1
@@ -256,28 +249,20 @@ class Client:
         pass
 
     def restart(self, game, player):
-        g: Game = Game.game
-
-        g.finished = False
-        g.won = False
-        g.playing = (-1) ** random.randint(0, 1)
-
-        to_clear = []
-        for sprite in g.sprites:
-            if sprite.name == 'button-again' or sprite.name == 'temp':
-                to_clear.append(sprite)
-
-        for sprite in to_clear:
-            g.sprites.remove(sprite)
+        pass
 
 
     def can_play(self, game, player, i, j):
         game: Game = Game.game
         multi: MultiGame = MultiGame.getGameByName(game.game_name)
 
+        if game.won or game.full:
+            game.restart()
+
         game.won = False
         game.full = False
         game.playing = 1
+
 
         if multi is not None and game.pseudo in multi.players and multi.players.index(game.pseudo) == 0:
             img = 'circle'
@@ -296,9 +281,11 @@ class Client:
         game: Game = Game.game
         multi: MultiGame = MultiGame.getGameByName(game.game_name)
 
+        if not (winner or full) and (game.won or game.full):
+            game.restart()
+
         if winner and game.winner == 0:
             game.winner = -1
-            game.sprites.append(Button((225, 100), (150, 75), 'Rejouer', name='button-again'))
         game.won = winner
         game.full = full
         game.playing = -1
@@ -590,6 +577,7 @@ class Game:
         self.grid.clear()
         self.finished = False
         self.won = False
+        self.full = False
         self.playing = (-1) ** random.randint(0, 1)
 
         to_clear = []
@@ -872,6 +860,14 @@ class Game:
         else:
             text_surface = Sprite.FONT_20
             self.screen.blit(text_surface.render("En attente d'un adversaire", False, (0, 0, 0)), (50, 20))
+        multi: MultiGame = MultiGame.getGameByName(self.game_name)
+        if multi is not None and self.pseudo in multi.players and len(multi.players) == 2:
+            text_surface = Sprite.FONT_20
+            if multi.players.index(self.pseudo) == 0:
+                self.screen.blit(text_surface.render(f"Adversaire: {multi.players[1]}", False, (0, 0, 0)), (50, 75))
+            else:
+                self.screen.blit(text_surface.render(f"Adversaire: {multi.players[0]}", False, (0, 0, 0)), (50, 75))
+
 
     def updateGames(self):
         MultiGame.getGamesList(self.client)
