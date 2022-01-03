@@ -670,7 +670,10 @@ class Game:
             img = Sprite.image('cross', size=(30, 30))
 
         if self.won:
-            txt = 'Joueur ' + str(player) + ' a gagné !'
+            who_won = self.grid.who_won() # -1 0 ou 1
+
+            # txt = 'Joueur ' + str(who_won) + ' a gagné !'
+            txt = 'Le joueur ' + ["Egalité", "rond", "croix"][who_won] + ' a gagné !'
             text_surface = pygame.font.SysFont("Comic Sans MS", 20)
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
