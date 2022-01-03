@@ -554,13 +554,18 @@ class Game:
         elif self.whichMenu == 3:
             local = '172.20.10.2'
             public = '91.165.38.233'
-            self.client = Client(public, 5050)
-            self.sprites.append(
-                Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
-                       (400, 100), 'Créez une partie', name='button-create'))
-            self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
-                                       Sprite.image('home'), 'button-return'))
-            self.updateGames()
+            try:
+                self.client = Client(public, 5050)
+                self.sprites.append(
+                    Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
+                           (400, 100), 'Créez une partie', name='button-create'))
+                self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
+                                           Sprite.image('home'), 'button-return'))
+                self.updateGames()
+            except:
+                self.whichMenu = 0
+                self.changeMenu()
+                print("Nous n'arrivons pas à nous connecter au serveur")
         elif self.whichMenu == 4:
             # Menu de jeu multi
             for i in range(3):
@@ -594,7 +599,8 @@ class Game:
         text_surface = Sprite.FONT_30
         txt = text_surface.render("Pseudo", False, (0, 0, 0))
         self.screen.blit(txt, (20, 500))
-        self.pseudo = InputBox.inputs[0].text
+        if len(InputBox.inputs) >= 1:
+            self.pseudo = InputBox.inputs[0].text
 
         for sprite in self.sprites:
             sprite.clicked = sprite.isClicked() or sprite.clicked
