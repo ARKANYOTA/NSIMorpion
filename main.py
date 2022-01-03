@@ -688,7 +688,7 @@ class Game:
             text_surface = Sprite.FONT_20
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
-                                 (180 + (15 * i), int(50 + (5 * math.sin((self.ticks // 2) + (i * 5))))))
+                                 (130 + (15 * i), int(50 + (5 * math.sin((self.ticks // 2) + (i * 5))))))
         elif self.finished:
             text_surface = Sprite.FONT_30
             self.screen.blit(text_surface.render("Il n'y a eu aucun gagnants !", False, (0, 0, 0)), (120, 60))
@@ -738,7 +738,7 @@ class Game:
         txt = text_surface.render("Rejoignez une partie ou créez-en une", False, (0, 0, 0))
         self.screen.blit(txt, (10, 20))
 
-        if self.ticks % 60 == 0 and not self.creation:
+        if self.ticks % 40 == 0 and not self.creation:
             self.updateGames()
 
         for sprite in self.sprites:
@@ -783,7 +783,7 @@ class Game:
     def multiGameMenu(self):
         multi: MultiGame = MultiGame.getGameByName(self.game_name)
         if multi != None:
-            if self.ticks % 30 == 0:
+            if self.ticks % 10 == 0:
                 multi.can_play(self.pseudo)
                 if not self.started or len(multi.players) < 2:
                     MultiGame.getGamesList(self.client)
@@ -1007,8 +1007,6 @@ def make_pseudo_Word(syllables=5, add_number=False):
         pwd += str(rnd.choice(range(10)))
     return pwd
 
-
-print(make_pseudo_Word(3))
 
 if __name__ == '__main__':
     if "--t" in sys.argv:  # Pour pouvoir faire python3 main.py --t pour lancer la version terminal
