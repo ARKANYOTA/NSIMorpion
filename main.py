@@ -795,11 +795,7 @@ class Game:
 
     def multiGameMenu(self):
         multi: MultiGame = MultiGame.getGameByName(self.game_name)
-<<<<<<< HEAD
-        if multi != None:
-=======
         if multi is not None:
->>>>>>> 4b37ff8383a4f58f6d6a50d80ce521cdea09ef0a
             if self.ticks % 10 == 0:
                 multi.can_play(self.pseudo)
                 if not self.started or len(multi.players) < 2:
