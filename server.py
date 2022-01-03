@@ -3,6 +3,7 @@ import socket
 import threading
 import main
 
+
 class Game:
     games = []
     playerNames = {0: -1, 1: 1}
@@ -32,6 +33,7 @@ class Game:
             if player in game.players:
                 return game
         return None
+
 
 class Server:
     header = 64
@@ -66,23 +68,23 @@ class Server:
                     conn.send(s.encode(self.format))
                 elif msg.startswith('create$'):
                     game, player = msg.replace('create$', '', 1).split('$')
-                    if Game.getGameByName(game) == None:
+                    if Game.getGameByName(game) is None:
                         Game(game).players.append(player)
-                        conn.send((f"created${game}${player}").encode(self.format))
+                        conn.send(f"created${game}${player}".encode(self.format))
                     else:
-                        conn.send((f"not_created${g}${player}").encode(self.format))
+                        conn.send(f"not_created${game}${player}".encode(self.format))
                 elif msg.startswith('join$'):
                     game, player = msg.replace('join$', '', 1).split('$')
                     g = Game.getGameByName(game)
                     if g is not None:
-                        if len(g.players) < 2 and not player in g.players:
+                        if len(g.players) < 2 and player not in g.players:
                             g.players.append(player)
-                            conn.send((f"joined${game}${player}").encode(self.format))
+                            conn.send(f"joined${game}${player}".encode(self.format))
 
                             if len(g.players) >= 2:
                                 g.started = True
                         else:
-                            conn.send((f"not_joined${g}${player}").encode(self.format))
+                            conn.send(f"not_joined${g}${player}".encode(self.format))
                     else:
                         conn.send(f'not_exist${game}${player}'.encode(self.format))
                 elif msg.startswith('leave$'):
@@ -108,32 +110,39 @@ class Server:
 
                     g: Game = Game.getGameByName(game)
                     if g is not None:
-                        if not g.finished and g.started and g.grid.get_value(i, j) == 0 and g.playing == Game.playerNames.get(g.players.index(player)):
+                        if not g.finished and g.started and g.grid.get_value(i, j) == 0 and \
+                                g.playing == Game.playerNames.get(g.players.index(player)):
                             g.grid.change_value(i, j, g.playing)
-                            conn.send((f"played${g.name}${player}${i}${j}${g.grid.is_winner()}${g.grid.is_full()}").encode(self.format))
+                            conn.send(f"played${g.name}${player}${i}${j}${g.grid.is_winner()}${g.grid.is_full()}".
+                                      encode(self.format))
 
                             if g.grid.is_winner() or g.grid.is_full():
                                 g.finished = True
                             else:
                                 g.playing *= -1
                         else:
-                            conn.send(f'not_played${g.name}${player}${i}${j}${g.grid.is_winner()}${g.grid.is_full()}'.encode(self.format))
+                            conn.send(
+                                f'not_played${g.name}${player}${i}${j}${g.grid.is_winner()}${g.grid.is_full()}'.encode(
+                                    self.format))
                     else:
                         conn.send(f'not_exist${game}${player}'.encode(self.format))
 
                 elif msg.startswith('again$'):
                     msg = msg.replace('again$', '', 1)
                     game, player = msg.split('$')
-                    g: Game = Game.getGameByName(g)
+                    g: Game = Game.getGameByName(game)
                     if g is not None:
-                        g.again.append()
-                        conn.send((f"again${g.name}${player}").encode(self.format))
-                    if len(g.again) == 2:
-                        conn.send((f"restart${g.name}${player}").encode(self.format))
-                        g.finished = False
-                        g.started = True
-                        g.again.clear()
-                        g.grid.clear()
+                        if player not in g.again:
+                            g.again.append(player)
+
+                        if len(g.again) == 2:
+                            conn.send(f"restart${g.name}${player}".encode(self.format))
+                            g.finished = False
+                            g.started = True
+                            g.again.clear()
+                            g.grid.clear()
+                        else:
+                            conn.send(f"again${g.name}${player}".encode(self.format))
                     else:
                         conn.send(f'not_exist${game}${player}'.encode(self.format))
                 elif msg.startswith('can_play$'):
@@ -143,7 +152,8 @@ class Server:
                         if not g.finished and g.started and g.playing == Game.playerNames.get(g.players.index(player)):
                             conn.send(f'can_play${game}${player}${g.grid.last[0]}${g.grid.last[1]}'.encode(self.format))
                         else:
-                            conn.send(f'cant_play${game}${player}${g.grid.last[0]}${g.grid.last[1]}${g.grid.is_winner()}${g.grid.is_full()}'.encode(self.format))
+                            conn.send(f'cant_play${game}${player}${g.grid.last[0]}${g.grid.last[1]}$'
+                                      f'{g.grid.is_winner()}${g.grid.is_full()}'.encode(self.format))
                     else:
                         conn.send(f'not_exist{game}${player}'.encode(self.format))
                 else:
