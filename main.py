@@ -253,7 +253,20 @@ class Client:
         pass
 
     def restart(self, game, player):
-        pass
+        g: Game = Game.game
+
+        g.finished = False
+        g.won = False
+        g.playing = (-1) ** random.randint(0, 1)
+
+        to_clear = []
+        for sprite in g.sprites:
+            if sprite.name == 'button-again' or sprite.name == 'temp':
+                to_clear.append(sprite)
+
+        for sprite in to_clear:
+            g.sprites.remove(sprite)
+
 
     def can_play(self, game, player, i, j):
         game: Game = Game.game
@@ -282,6 +295,7 @@ class Client:
 
         if winner and game.winner == 0:
             game.winner = -1
+            game.sprites.append(Button((225, 100), (150, 75), 'Rejouer', name='button-again'))
         game.won = winner
         game.full = full
         game.playing = -1
@@ -573,7 +587,7 @@ class Game:
         self.grid.clear()
         self.finished = False
         self.won = False
-        self.playing = -1 ** random.randint(0, 2)
+        self.playing = (-1) ** random.randint(0, 1)
 
         to_clear = []
         for sprite in self.sprites:
@@ -636,8 +650,7 @@ class Game:
                     self.won = self.grid.is_winner()
                     self.finished = True
 
-            sprite.clicked = sprite.isClicked() or sprite.clicked
-            if not sprite.isClicked() and sprite.clicked and (not self.ai or self.playing == 1):
+            if sprite.isClicked() and (not self.ai or self.playing == 1):
                 sprite.clicked = False
                 if sprite.name == 'button-restart':
                     self.restart()
@@ -738,7 +751,7 @@ class Game:
         txt = text_surface.render("Rejoignez une partie ou créez-en une", False, (0, 0, 0))
         self.screen.blit(txt, (10, 20))
 
-        if self.ticks % 60 == 0 and not self.creation:
+        if self.ticks % 40 == 0 and not self.creation:
             self.updateGames()
 
         for sprite in self.sprites:
@@ -782,8 +795,8 @@ class Game:
 
     def multiGameMenu(self):
         multi: MultiGame = MultiGame.getGameByName(self.game_name)
-        if multi != None:
-            if self.ticks % 30 == 0:
+        if multi is not None:
+            if self.ticks % 10 == 0:
                 multi.can_play(self.pseudo)
                 if not self.started or len(multi.players) < 2:
                     MultiGame.getGamesList(self.client)
@@ -794,14 +807,13 @@ class Game:
             multi = MultiGame.getGameByName(self.game_name)
 
         for sprite in self.sprites:
-            if sprite.name == 'button-restart':
+            if sprite.name == 'button-restart' or sprite.name == 'button-again':
                 if sprite.isOver():
                     sprite.image.next_frame()
                 elif sprite.image.cur >= 1:
                     sprite.image.prev_frame()
 
-            sprite.clicked = sprite.isClicked() or sprite.clicked
-            if not sprite.isClicked() and sprite.clicked:
+            if sprite.isClicked():
                 sprite.clicked = False
                 if sprite.name == 'button-restart':
                     multi.again(self.pseudo)
@@ -818,6 +830,8 @@ class Game:
                 elif 'case-' in sprite.name and not self.finished and self.playing == 1:
                     i, j = sprite.name.replace('case-', '').split('-')
                     multi.play(self.pseudo, i, j)
+                elif sprite.name == 'button-again':
+                    multi.again(self.pseudo)
 
             if isinstance(sprite.image, pygame.Surface):
                 self.screen.blit(pygame.transform.scale(sprite.image, sprite.size), sprite.pos)
@@ -1007,8 +1021,6 @@ def make_pseudo_Word(syllables=5, add_number=False):
         pwd += str(rnd.choice(range(10)))
     return pwd
 
-
-print(make_pseudo_Word(3))
 
 if __name__ == '__main__':
     if "--t" in sys.argv:  # Pour pouvoir faire python3 main.py --t pour lancer la version terminal
