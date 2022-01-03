@@ -1,6 +1,8 @@
 import math
 import random
 import socket
+import string
+
 import sys
 
 import pygame
@@ -17,6 +19,9 @@ Check List:
 
 
 class Sprite(Rect):
+    pygame.font.init()
+    FONT_30 = pygame.font.Font('./font/Roboto-Regular.ttf', 30)
+    FONT_20 = pygame.font.Font('./font/Roboto-Regular.ttf', 20)
     def __init__(self, pos, size, image, name="null", collide=False):
         super().__init__(pos[0], pos[1], size[0], size[1])
         self.clicked = False
@@ -51,7 +56,7 @@ class Sprite(Rect):
 
 
 class Button(Sprite):
-    def __init__(self, pos: tuple, size: tuple, text: str = '', font: str = 'Comic Sans MS', name: str = "null",
+    def __init__(self, pos: tuple, size: tuple, text: str = '', font: str = './font/Roboto-Regular.ttf', name: str = "null",
                  collide: bool = False):
         super(Button, self).__init__(pos, size, GIFImage("./images/button.gif"), name, collide)
         self.image.get_frames()
@@ -60,7 +65,7 @@ class Button(Sprite):
 
     def afficher(self, screen):
         img = pygame.transform.scale(self.image.frames[self.image.cur][0], self.size)
-        text_surface = pygame.font.SysFont(self.font, 50).render(self.text, False, (100, 100, 100))
+        text_surface = pygame.font.Font(self.font, 50).render(self.text, False, (100, 100, 100))
 
         x_percent = img.get_size()[0] * 0.9 / text_surface.get_size()[0]
         text_surface = pygame.transform.scale(text_surface, (
@@ -84,9 +89,11 @@ class InputBox:
     def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = (0, 0, 0)
+        self.color_active = (255, 0, 0)
         self.text = text
-        self.font = pygame.font.SysFont('Comic Sans MS', 30)
+        self.font = Sprite.FONT_30
         self.txt_surface = self.font.render(text, True, self.color)
+        self.txt_surface_active = self.font.render(text, True, self.color_active)
         self.active = False
         InputBox.inputs.append(self)
 
@@ -100,16 +107,20 @@ class InputBox:
             if self.active:
                 if event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
-                elif len(self.text) < 10 and event.unicode != '$':
+                elif len(self.text) < 12 and event.unicode != '$':
                     self.text += event.unicode
                 self.txt_surface = self.font.render(self.text, True, self.color)
+                self.txt_surface_active = self.font.render(self.text, True, self.color_active)
 
     def update(self):
         width = max(self.rect.w, self.txt_surface.get_width() + 30)
         self.rect.w = width
 
     def draw(self, screen):
-        screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
+        if self.active:
+            screen.blit(self.txt_surface_active, (self.rect.x + 5, self.rect.y + 5))
+        else:
+            screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
@@ -458,8 +469,8 @@ class Game:
         self.oldMenu = -1
         self.ticks = 0
 
-        self.game_name = 'game name'
-        self.pseudo = f'pseudo-{random.randint(1000, 9999)}'
+        self.game_name = ("Game" + make_pseudo_Word(3))[:11]
+        self.pseudo = make_pseudo_Word(3)[:11]
         self.creation = False
         self.started = False
         self.full = False
@@ -509,10 +520,10 @@ class Game:
         if self.whichMenu == 0:
             InputBox(150, 500, 200, 50, self.pseudo)
             # Afficher les bouttons du menu principal
-            self.sprites.append(Button((100, 200), (150, 75), "Jouer", "Comic Sans MS", "boutton-jouer"))
-            self.sprites.append(Button((300, 200), (150, 75), "1v1", "Comic Sans MS", "boutton-1v1"))
-            self.sprites.append(Button((100, 300), (150, 75), "Multi", "Comic Sans MS", "boutton-multi"))
-            self.sprites.append(Button((300, 300), (150, 75), "Quitter", "Comic Sans MS", "boutton-quitter"))
+            self.sprites.append(Button((100, 200), (150, 75), "Jouer", name="boutton-jouer"))
+            self.sprites.append(Button((300, 200), (150, 75), "1v1", name="boutton-1v1"))
+            self.sprites.append(Button((100, 300), (150, 75), "Multi", name="boutton-multi"))
+            self.sprites.append(Button((300, 300), (150, 75), "Quitter", name="boutton-quitter"))
             self.sprites.append(Sprite((100, 0), (400, 200), Sprite.image("Title"), "title"))
         elif self.whichMenu == 1:
             # Jouer contre IA
@@ -573,7 +584,7 @@ class Game:
             self.sprites.remove(sprite)
 
     def mainMenu(self):
-        text_surface = pygame.font.SysFont('Comic Sans MS', 30)
+        text_surface = Sprite.FONT_30
         txt = text_surface.render("Pseudo", False, (0, 0, 0))
         self.screen.blit(txt, (20, 500))
         self.pseudo = InputBox.inputs[0].text
@@ -670,24 +681,24 @@ class Game:
             img = Sprite.image('cross', size=(30, 30))
 
         if self.won:
-            who_won = self.grid.who_won() # -1 0 ou 1
+            who_won = self.grid.who_won()  # -1 0 ou 1
 
             # txt = 'Joueur ' + str(who_won) + ' a gagné !'
             txt = 'Le joueur ' + ["Egalité", "rond", "croix"][who_won] + ' a gagné !'
-            text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+            text_surface = Sprite.FONT_20
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
                                  (180 + (15 * i), int(50 + (5 * math.sin((self.ticks // 2) + (i * 5))))))
         elif self.finished:
-            text_surface = pygame.font.SysFont("Comic Sans MS", 30)
+            text_surface = Sprite.FONT_30
             self.screen.blit(text_surface.render("Il n'y a eu aucun gagnants !", False, (0, 0, 0)), (120, 60))
         else:
-            text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+            text_surface = Sprite.FONT_20
             self.screen.blit(text_surface.render("C'est au tour du joueur " + str(player), False, (0, 0, 0)), (50, 20))
             self.screen.blit(img, (300, 20))
 
     def aiMenu(self):
-        text_surface = pygame.font.SysFont('Comic Sans MS', 30)
+        text_surface = Sprite.FONT_30
         txt = text_surface.render("Choisissez la difficulté de l'IA", False, (0, 0, 0))
         self.screen.blit(txt, (90, 80))
 
@@ -723,7 +734,7 @@ class Game:
                     self.ai = True
 
     def multiMenu(self):
-        text_surface = pygame.font.SysFont('Comic Sans MS', 30)
+        text_surface = Sprite.FONT_30
         txt = text_surface.render("Rejoignez une partie ou créez-en une", False, (0, 0, 0))
         self.screen.blit(txt, (10, 20))
 
@@ -830,19 +841,19 @@ class Game:
                 else:
                     txt = 'Vous avez perdu !'
 
-                text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+                text_surface = Sprite.FONT_30
                 for i in range(len(txt)):
                     self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
                                      (180 + (15 * i), int(50 + (5 * math.sin((self.ticks // 2) + (i * 5))))))
             elif self.full:
-                text_surface = pygame.font.SysFont("Comic Sans MS", 30)
+                text_surface = Sprite.FONT_30
                 self.screen.blit(text_surface.render("Il n'y a eu aucun gagnants !", False, (0, 0, 0)), (120, 60))
             else:
-                text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+                text_surface = Sprite.FONT_20
                 self.screen.blit(text_surface.render(txt, False, (0, 0, 0)), (50, 20))
                 self.screen.blit(img, (300, 20))
         else:
-            text_surface = pygame.font.SysFont("Comic Sans MS", 20)
+            text_surface = Sprite.FONT_20
             self.screen.blit(text_surface.render("En attente d'un adversaire", False, (0, 0, 0)), (50, 20))
 
     def updateGames(self):
@@ -980,6 +991,24 @@ class Game:
 
         return None, None
 
+
+# https://www.it-swarm-fr.com/fr/python/generateur-de-mot-de-passe-aleatoire-simple-de-haute-qualite/940086298/
+def make_pseudo_Word(syllables=5, add_number=False):
+    """Create decent memorable passwords.
+    Alternate random consonants & vowels
+    """
+    rnd = random.SystemRandom()
+    s = string.ascii_lowercase
+    vowels = 'aeiou'
+    consonants = ''.join([x for x in s if x not in vowels])
+    pwd = ''.join([rnd.choice(consonants) + rnd.choice(vowels)
+                   for x in range(syllables)]).title()
+    if add_number:
+        pwd += str(rnd.choice(range(10)))
+    return pwd
+
+
+print(make_pseudo_Word(3))
 
 if __name__ == '__main__':
     if "--t" in sys.argv:  # Pour pouvoir faire python3 main.py --t pour lancer la version terminal
