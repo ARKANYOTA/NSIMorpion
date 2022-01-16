@@ -1,15 +1,14 @@
+#!/usr/bin/env python
+import os
 import math
 import random
 import socket
 import string
-
 import sys
-
-import os
+from config import *
 
 # Permet de cacher le message pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-
 import pygame
 from pygame.locals import *
 from GIFImage import GIFImage
@@ -131,10 +130,10 @@ class Client:
     def __init__(self, host, port):
         self.port = port
         self.host = host
-        self.addr = (self.host, self.port)
+        self.adresse = (self.host, self.port)
 
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client.connect(self.addr)
+        self.client.connect(self.adresse)
 
     def send(self, msg):
         message = msg.encode(self.format)
@@ -161,9 +160,10 @@ class Client:
             game, player = msg.replace('not_created$', '', 1).split('$')
             self.not_created(game, player)
         elif msg.startswith('played$'):
-            game, player, i, j, winner, full = msg.replace('played$', '', 1).split('$')
+            game, player, i, j, winner, full, winner_player = msg.replace('played$', '', 1).split('$')
             i, j, winner, full = int(i), int(j), self.toBool(winner), self.toBool(full)
-            self.played(game, player, i, j, winner, full)
+            winner_player = winner_player if winner_player != 'None' else None
+            self.played(game, player, i, j, winner, full, winner_player=winner_player)
         elif msg.startswith('not_played$'):
             game, player, i, j, winner, full = msg.replace('not_played$', '', 1).split('$')
             i, j, winner, full = int(i), int(j), self.toBool(winner), self.toBool(full)
@@ -179,15 +179,19 @@ class Client:
             i, j = int(i), int(j)
             self.can_play(game, player, i, j)
         elif msg.startswith('cant_play$'):
-            game, player, i, j, winner, full = msg.replace('cant_play$', '', 1).split('$')
+            game, player, i, j, winner, full, winner_player = msg.replace('cant_play$', '', 1).split('$')
             i, j, winner, full = int(i), int(j), self.toBool(winner), self.toBool(full)
-            self.cant_play(game, player, i, j, winner, full)
+            winner_player = winner_player if winner_player != 'None' else None
+            self.cant_play(game, player, i, j, winner, full, winner_player=winner_player)
         elif msg.startswith('not_exist$'):
             game, player = msg.replace('not_exist$', '', 1).split('$')
             self.not_exist(game, player)
         elif msg.startswith('unknown$'):
             msg = msg.replace('unknown$', '', 1).split('$')
             self.unknown(msg)
+        elif msg.startswith('getdata$'):
+            msg = msg.replace('getdata$', '', 1)
+            Game.store_data(msg)
 
     @staticmethod
     def toBool(txt: str) -> bool:
@@ -223,11 +227,11 @@ class Client:
     def not_created(self, game, player):
         pass
 
-    def played(self, game, player, i, j, winner, full):
+    def played(self, game, player, i, j, winner, full, winner_player=None):
         game: Game = Game.game
         multi: MultiGame = MultiGame.getGameByName(game.game_name)
 
-        if winner and game.winner == 0:
+        if winner and winner_player == player:
             game.winner = 1
 
         game.won = winner
@@ -279,14 +283,14 @@ class Client:
                                name=f'sp-{i}-{j}'))
                     break
 
-    def cant_play(self, game, player, i, j, winner, full):
+    def cant_play(self, game, player, i, j, winner, full, winner_player=None):
         game: Game = Game.game
         multi: MultiGame = MultiGame.getGameByName(game.game_name)
 
         if not (winner or full) and (game.won or game.full):
             game.restart()
 
-        if winner and game.winner == 0:
+        if winner and winner_player != player:
             game.winner = -1
         game.won = winner
         game.full = full
@@ -316,6 +320,7 @@ class Client:
 class MultiGame:
     games = []
     playerNames = {0: -1, 1: 1}
+    playerNamesInv = {-1: 0, 1: 1}
 
     def __init__(self, name, client):
         self.players = []
@@ -368,6 +373,10 @@ class MultiGame:
         g = MultiGame.getGameByName(game)
         if g is None:
             client.send(f"create${game}${player}")
+
+    @staticmethod
+    def get_data_list(client):
+        client.send("getdata")
 
 
 class Grid:
@@ -450,13 +459,14 @@ class Grid:
 
 class Game:
     game = None
+    stored_data = {}
 
     def __init__(self):
         Game.game = self
         pygame.init()
         pygame.font.init()
 
-        self.client: Client = None
+        self.client = None
         self.grid = Grid()
         self.playing = 1
         self.difficulty = 0
@@ -475,9 +485,10 @@ class Game:
         self.oldMenu = -1
         self.ticks = 0
 
-        self.game_name = ("Game" + make_pseudo_Word(3))[:11]
-        self.pseudo = make_pseudo_Word(3)[:11]
+        self.game_name = ("Game" + make_pseudo_word(3))[:11]
+        self.pseudo = make_pseudo_word(3)[:11]
         self.creation = False
+        self.view_data = False
         self.started = False
         self.full = False
         self.winner = 0
@@ -525,7 +536,7 @@ class Game:
 
         if self.whichMenu == 0:
             InputBox(150, 500, 200, 50, self.pseudo)
-            # Afficher les bouttons du menu principal
+            # Afficher les boutons du menu principal
             self.sprites.append(Button((100, 200), (150, 75), "Jouer", name="boutton-jouer"))
             self.sprites.append(Button((300, 200), (150, 75), "1v1", name="boutton-1v1"))
             self.sprites.append(Button((100, 300), (150, 75), "Multi", name="boutton-multi"))
@@ -552,17 +563,18 @@ class Game:
             self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                        Sprite.image('home'), 'button-return'))
         elif self.whichMenu == 3:
-            local = '172.20.10.2'
-            public = '91.165.38.233'
             try:
-                self.client = Client(public, 5050)
+                self.client = Client(local if is_local else public, port)
                 self.sprites.append(
-                    Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 100),
+                    Button(((self.screen.get_size()[0] - 400) / 2, int(self.screen.get_size()[1] * 0.9) - 130),
                            (400, 100), 'Créez une partie', name='button-create'))
+                self.sprites.append(
+                    Button(((self.screen.get_size()[0] - 220) / 2, int(self.screen.get_size()[1] * 0.9 - 10)),
+                           (400 * 0.5, 100 * 0.5), 'Données', name='button-data'))
                 self.sprites.append(Sprite((int(self.screen.get_size()[0] * 0.9), 5), (50, 50),
                                            Sprite.image('home'), 'button-return'))
                 self.updateGames()
-            except:
+            except OSError:
                 self.whichMenu = 0
                 self.changeMenu()
                 print("Nous n'arrivons pas à nous connecter au serveur")
@@ -616,7 +628,7 @@ class Game:
                 if sprite.name == "boutton-multi":
                     self.whichMenu = 3
 
-            # Faudrait move ce truc autre part car il se repette sur tout les Game Main
+            # Il faudrait move ce truc autre part, car il se répète sur tout les Game Main
             if isinstance(sprite.image, GIFImage):
                 if sprite.isOver():
                     sprite.image.next_frame()
@@ -638,11 +650,11 @@ class Game:
 
             if self.ai and self.playing == -1 and not (self.grid.is_winner() or self.grid.is_full()):
                 if self.difficulty == 0:
-                    self.playEasy()
+                    self.play_easy()
                 elif self.difficulty == 1:
-                    self.playNormal()
+                    self.play_normal()
                 elif self.difficulty == 2:
-                    self.playHard()
+                    self.play_hard()
 
                 if self.grid.is_winner() or self.grid.is_full():
                     self.sprites.append(Button((230, 120), (150, 75), 'Rejouer', name='button-restart'))
@@ -696,7 +708,7 @@ class Game:
             who_won = self.grid.who_won()  # -1 0 ou 1
 
             # txt = 'Joueur ' + str(who_won) + ' a gagné !'
-            txt = 'Le joueur ' + ["Egalité", "rond", "croix"][who_won] + ' a gagné !'
+            txt = 'Le joueur ' + ["Égalité", "rond", "croix"][who_won] + ' a gagné !'
             text_surface = Sprite.FONT_20
             for i in range(len(txt)):
                 self.screen.blit(text_surface.render(txt[i], False, (0, 0, 0)),
@@ -766,10 +778,10 @@ class Game:
             sprite.clicked = sprite.isClicked() or sprite.clicked
             if not sprite.isClicked() and sprite.clicked:
                 sprite.clicked = False
-                if sprite.name == 'button-return' and not self.creation:
+                if sprite.name == 'button-return' and not self.creation and not self.view_data:
                     self.whichMenu = 0
                     self.client.close()
-                elif sprite.name.startswith('button-join-') and not self.creation:
+                elif sprite.name.startswith('button-join-') and not self.creation and not self.view_data:
                     game = sprite.name.replace('button-join-', '', 1)
                     MultiGame.join(self.pseudo, game, self.client)
                 elif sprite.name == 'button-create' and not self.creation:
@@ -778,19 +790,45 @@ class Game:
                     self.sprites.append(Sprite((470, 78), (50, 50), Sprite.image('close'), name='create-close'))
                     self.sprites.append(Button((210, 400), (180, 90), 'Créer la partie', name='button-creation'))
                     InputBox(205, 200, 200, 50, self.game_name)
-                elif sprite.name == 'button-creation' and self.creation:
+                elif sprite.name == 'button-creation' and self.creation and not self.view_data:
                     MultiGame.create(self.pseudo, self.game_name, self.client)
+                elif sprite.name == 'button-data' and not self.view_data and not self.creation:
+                    self.view_data = True
+                    self.sprites.append(Sprite((50, 50), (500, 500), Sprite.image('create-bg'), 'create-bg'))
+                    self.sprites.append(Sprite((470, 78), (50, 50), Sprite.image('close'), name='create-close'))
+                    MultiGame.get_data_list(self.client)
                 elif sprite.name == 'create-close' and self.creation:
                     InputBox.inputs.clear()
                     self.sprites.remove(self.getSpriteByName('create-bg'))
                     self.sprites.remove(self.getSpriteByName('create-close'))
                     self.sprites.remove(self.getSpriteByName('button-creation'))
                     self.creation = False
+                elif sprite.name == 'create-close' and self.view_data:
+                    self.sprites.remove(self.getSpriteByName('create-bg'))
+                    self.sprites.remove(self.getSpriteByName('create-close'))
+                    self.view_data = False
 
         if self.creation:
             self.game_name = InputBox.inputs[0].text
             txt = text_surface.render("Entrez le nom de votre partie", False, (0, 0, 0))
             self.screen.blit(txt, (95, 150))
+        if self.view_data:
+            txt = text_surface.render("Player/Score/Parties/Ratio", False, (0, 0, 0))
+            self.screen.blit(txt, (110, 80))
+            txt = text_surface.render("Meilleurs Joueurs:", False, (0, 0, 0))
+            self.screen.blit(txt, (95, 110))
+            txt = text_surface.render("Joueurs les plus accros:", False, (0, 0, 0))
+            self.screen.blit(txt, (95, 110 + 30*7))
+            for knd, k in enumerate((Game.stored_data[:5], Game.stored_data[5:])):
+                for ind, i in enumerate(k):
+                    txt = text_surface.render(i[0], False, (0, 0, 0))
+                    self.screen.blit(txt, (130, 140 + ind * 30+ 30*7*knd))
+                    txt = text_surface.render(str(i[1]), False, (0, 0, 0))
+                    self.screen.blit(txt, (130 + 140, 140 + ind * 30+ 30*7*knd))
+                    txt = text_surface.render(str(i[2]), False, (0, 0, 0))
+                    self.screen.blit(txt, (130+220, 140 + ind * 30+ 30*7*knd))
+                    txt = text_surface.render(f'{round(i[1]/i[2]*100)}%', False, (0, 0, 0))
+                    self.screen.blit(txt, (130 + 300, 140 + ind * 30+ 30*7*knd))
 
     def multiGameMenu(self):
         multi: MultiGame = MultiGame.getGameByName(self.game_name)
@@ -883,7 +921,7 @@ class Game:
         for sprite in self.sprites:
             if sprite.name.startswith('button-join-'):
                 game: MultiGame = MultiGame.getGameByName(sprite.name.replace('button-join-', '', 1))
-                if game == None or len(game.players) == 2:
+                if game is None or len(game.players) == 2:
                     remove.append(sprite)
 
         for sprite in remove:
@@ -892,7 +930,7 @@ class Game:
 
         i = self.countCurrentGames()
         for game in MultiGame.games:
-            if len(game.players) == 1 and self.getSpriteByName(f'button-join-{game.name}') == None:
+            if len(game.players) == 1 and self.getSpriteByName(f'button-join-{game.name}') is None:
                 self.sprites.insert(len(self.sprites) - 1, Button((50 + 170 * (i % 3), 100 + 85 * (i // 3)), (150, 75),
                                                                   game.name, name=f'button-join-{game.name}'))
                 i += 1
@@ -910,11 +948,11 @@ class Game:
                 return sprite
         return None
 
-    def playEasy(self):
+    def play_easy(self):
         self.playing *= -1
 
-        l = self.grid.list_positions_empty()
-        i, j = random.choice(l)
+        empty_positions = self.grid.list_positions_empty()
+        i, j = random.choice(empty_positions)
 
         self.grid.change_value(i, j, -1)
         sprite = None
@@ -927,13 +965,14 @@ class Game:
             Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
                    (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
 
-    def playNormal(self):
+    def play_normal(self):
         self.playing *= -1
 
         l = self.grid.list_positions_empty()
         i, j = random.choice(l)
 
-        # On vérifie en premier si on peut bloquer puis si on peut gagner (On = le bot) car si la 2e action est vrai elle écrasera la premiere
+        # On vérifie en premier si on peut bloquer puis si on peut gagner (On = le bot) car si la 2e action est vrai
+        # elle écrasera la premiere
         for d in [1, -1]:
             for a in range(3):
                 for b in range(3):
@@ -956,11 +995,10 @@ class Game:
 
         return None, None
 
-    def HardChoosePos(self):
+    def hard_choose_pos(self):
         if self.grid.grid_is_empty():
-            return 1, 1
+            return 0, 0
 
-        # On vérifie en premier si on peut bloquer puis si on peut gagner (On = le bot) car si la 2e action est vrai elle écrasera la premiere
         for d in [-1, 1]:
             for a in range(3):
                 for b in range(3):
@@ -972,7 +1010,7 @@ class Game:
 
         if self.grid.get_value(1, 1) == 0:
             return 1, 1
-        bestpos = [-1, -1, -1000]
+        best_position = [-1, -1, -1000]
         for i, j in self.grid.list_positions_empty():
             new_grid = self.grid.copy()
             new_grid.change_value(i, j, -1)
@@ -980,24 +1018,24 @@ class Game:
                 return i, j
             points = 0
             for i2, j2 in new_grid.list_positions_empty():
-                nnew_grid = new_grid.copy()
-                nnew_grid.change_value(i2, j2, 1)
-                if nnew_grid.is_winner():
+                new_new_grid = new_grid.copy()
+                new_new_grid.change_value(i2, j2, 1)
+                if new_new_grid.is_winner():
                     points -= 1
-                elif nnew_grid.is_full():
+                elif new_new_grid.is_full():
                     pass
-                for i3, j3 in nnew_grid.list_positions_empty():
-                    nnnew_grid = nnew_grid.copy()
-                    nnnew_grid.change_value(i3, j3, -1)
-                    if nnnew_grid.is_winner():
+                for i3, j3 in new_new_grid.list_positions_empty():
+                    new_new_new_grid = new_new_grid.copy()
+                    new_new_new_grid.change_value(i3, j3, -1)
+                    if new_new_new_grid.is_winner():
                         points += 1
-            if points > bestpos[2]:
-                bestpos = [i, j, points]
-        return bestpos[0], bestpos[1]
+            if points > best_position[2]:
+                best_position = [i, j, points]
+        return best_position[0], best_position[1]
 
-    def playHard(self):
+    def play_hard(self):
         self.playing *= -1
-        i, j = self.HardChoosePos()
+        i, j = self.hard_choose_pos()
         self.grid.change_value(i, j, -1)
         sprite = None
         for s in self.sprites:
@@ -1011,18 +1049,22 @@ class Game:
 
         return None, None
 
+    @staticmethod
+    def store_data(msg):
+        Game.stored_data = eval(msg)
+
 
 # https://www.it-swarm-fr.com/fr/python/generateur-de-mot-de-passe-aleatoire-simple-de-haute-qualite/940086298/
-def make_pseudo_Word(syllables=5, add_number=False):
+def make_pseudo_word(syllables=5, add_number=False):
     """Create decent memorable passwords.
     Alternate random consonants & vowels
     """
     rnd = random.SystemRandom()
     s = string.ascii_lowercase
-    vowels = 'aeiou'
+    vowels = "aeiou"
     consonants = ''.join([x for x in s if x not in vowels])
     pwd = ''.join([rnd.choice(consonants) + rnd.choice(vowels)
-                   for x in range(syllables)]).title()
+                   for _ in range(syllables)]).title()
     if add_number:
         pwd += str(rnd.choice(range(10)))
     return pwd

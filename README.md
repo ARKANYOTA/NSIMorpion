@@ -11,5 +11,9 @@ Ou la version terminal
 python3 main.py --t
 ```
 
+## Versions
+
+Ne pas avoir PIL version 9.0.0 ou 9.1.0!
+
 Changer de Serveur:
-Changer l'ip à la ligne 555 ou 556, et changer ligne 557 local ou public
+Changer le config.py

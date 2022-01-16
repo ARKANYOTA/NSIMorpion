@@ -1,31 +1,34 @@
 from PIL import Image
+
+if Image.__version__ == '9.0.0':
+    raise ImportError('PIL 9.0.0 is not supported, please do pip install --upgrade Pillow==8.4.0 or downgrade PIL')
 import pygame
 from pygame.locals import *
 import time
+
 
 class GIFImage(object):
     def __init__(self, filename):
         self.filename = filename
         self.image = Image.open(filename)
         self.original_size = self.image.size
-#Added by NS  *********************
-        #self.frames = []
+        # Added by NS  *********************
+        # self.frames = []
         self.fps_scale = 1
         self.img_scale = 1
-#**********************************       
+        # **********************************
         self.get_frames()
 
         self.cur = 0
         self.ptime = time.time()
 
         self.running = True
-        self.breakpoint = len(self.frames)-1
+        self.breakpoint = len(self.frames) - 1
         self.startpoint = 0
         self.reversed = False
- 
 
     def get_rect(self):
-        return pygame.rect.Rect((0,0), self.image.size)
+        return pygame.rect.Rect((0, 0), self.image.size)
 
     def get_frames(self):
         image = self.image
@@ -33,7 +36,7 @@ class GIFImage(object):
         pal = image.getpalette()
         base_palette = []
         for i in range(0, len(pal), 3):
-            rgb = pal[i:i+3]
+            rgb = pal[i:i + 3]
             base_palette.append(rgb)
 
         all_tiles = []
@@ -43,7 +46,7 @@ class GIFImage(object):
                     image.seek(0)
                 if image.tile:
                     all_tiles.append(image.tile[0][3][0])
-                image.seek(image.tell()+1)
+                image.seek(image.tell() + 1)
         except EOFError:
             image.seek(0)
 
@@ -57,11 +60,11 @@ class GIFImage(object):
                     duration = 100
 
                 duration *= .001
-                
-                #Added by NS  ************
+
+                # Added by NS  ************
                 duration *= self.fps_scale
-                #*************************
-                
+                # *************************
+
                 cons = False
 
                 x0, y0, x1, y1 = (0, 0) + image.size
@@ -79,13 +82,13 @@ class GIFImage(object):
                         pal = image.getpalette()
                         palette = []
                         for i in range(0, len(pal), 3):
-                            rgb = pal[i:i+3]
+                            rgb = pal[i:i + 3]
                             palette.append(rgb)
                     elif all_tiles in ((7, 8), (8, 7)):
                         pal = image.getpalette()
                         palette = []
                         for i in range(0, len(pal), 3):
-                            rgb = pal[i:i+3]
+                            rgb = pal[i:i + 3]
                             palette.append(rgb)
                     else:
                         palette = base_palette
@@ -100,10 +103,10 @@ class GIFImage(object):
                 if cons:
                     for i in self.frames:
                         pi2.blit(i[0], (0, 0))
-                pi2.blit(pi, (x0, y0), (x0, y0, x1-x0, y1-y0))
+                pi2.blit(pi, (x0, y0), (x0, y0, x1 - x0, y1 - y0))
 
                 self.frames.append([pi2, duration])
-                image.seek(image.tell()+1)
+                image.seek(image.tell() + 1)
         except EOFError:
             pass
 
@@ -120,23 +123,23 @@ class GIFImage(object):
                         self.cur = self.startpoint
 
                 self.ptime = time.time()
-        #Added by NS  **************************************
+        # Added by NS  **************************************
         if self.img_scale == 1:
             surf = self.frames[self.cur][0]
         else:
             surf = pygame.transform.scale(self.frames[self.cur][0],
-                                (int(self.image.width * self.img_scale),
-                                 int(self.image.height * self.img_scale)))
+                                          (int(self.image.width * self.img_scale),
+                                           int(self.image.height * self.img_scale)))
         screen.blit(surf, pos)
-        #screen.blit(self.frames[self.cur][0], pos)
-        #***************************************************
+        # screen.blit(self.frames[self.cur][0], pos)
+        # ***************************************************
 
     def seek(self, num):
         self.cur = num
         if self.cur < 0:
             self.cur = 0
         if self.cur >= len(self.frames):
-            self.cur = len(self.frames)-1
+            self.cur = len(self.frames) - 1
 
     def set_bounds(self, start, end):
         if start < 0:
@@ -175,7 +178,7 @@ class GIFImage(object):
         self.fps_scale += .05 if self.fps_scale != .01 else .04
         self.get_frames()
         self.seek(self.cur)
-        
+
     def speed_up(self):
         if self.fps_scale - .05 <= 0:
             self.fps_scale = .01
@@ -189,26 +192,33 @@ class GIFImage(object):
 
     def reset_scale(self):
         self.img_scale = 1
-#*********************************************
+
+    # *********************************************
 
     def play(self):
         self.running = True
 
     def rewind(self):
         self.seek(0)
+
     def fastforward(self):
-        self.seek(self.length()-1)
+        self.seek(self.length() - 1)
 
     def get_height(self):
         return self.image.size[1]
+
     def get_width(self):
         return self.image.size[0]
+
     def get_size(self):
         return self.image.size
+
     def length(self):
         return len(self.frames)
+
     def reverse(self):
         self.reversed = not self.reversed
+
     def reset(self):
         self.cur = 0
         self.ptime = time.time()
@@ -222,7 +232,7 @@ class GIFImage(object):
         new.cur = self.cur
         new.ptime = self.ptime
         new.reversed = self.reversed
-        #Added by NS  ****
+        # Added by NS  ****
         new.fps_scale = self.fps_scale
-        #*****************
+        # *****************
         return new
