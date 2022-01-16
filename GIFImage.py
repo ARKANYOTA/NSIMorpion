@@ -1,6 +1,6 @@
 from PIL import Image
 
-if Image.__version__ == '9.0.0':
+if int(Image.__version__.split('.')[0]) >= 9:
     raise ImportError('PIL 9.0.0 is not supported, please do pip install --upgrade Pillow==8.4.0 or downgrade PIL')
 import pygame
 from pygame.locals import *

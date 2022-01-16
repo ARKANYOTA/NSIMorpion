@@ -23,10 +23,8 @@ class SQL:
             if self.cur.fetchone() is None:
                 self.cur.execute("INSERT INTO Result VALUES(?,?,?)", (pseudo, score, nb_partie))
             else:
-                self.cur.execute("SELECT score FROM Result WHERE pseudo = ?", (pseudo,))
-                db_score = self.cur.fetchone()[0]
-                self.cur.execute("SELECT nombre_de_partie FROM Result WHERE pseudo = ?", (pseudo,))
-                db_nb_partie = self.cur.fetchone()[0]
+                self.cur.execute("SELECT score, nombre_de_partie FROM Result WHERE pseudo = ?", (pseudo,))
+                db_score, db_nb_partie = self.cur.fetchone()
                 self.cur.execute("UPDATE Result SET score = ?, nombre_de_partie = ? WHERE pseudo = ?",
                                  (db_score + score, db_nb_partie + nb_partie, pseudo))
         self.data.commit()

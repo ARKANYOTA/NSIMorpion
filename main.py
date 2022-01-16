@@ -18,6 +18,7 @@ class Sprite(Rect):
     pygame.font.init()
     FONT_30 = pygame.font.Font('./font/Roboto-Regular.ttf', 30)
     FONT_20 = pygame.font.Font('./font/Roboto-Regular.ttf', 20)
+    current_theme_ext = 0
 
     def __init__(self, pos, size, image, name="null", collide=False):
         super().__init__(pos[0], pos[1], size[0], size[1])
@@ -238,9 +239,9 @@ class Client:
         game.full = full
         game.playing *= -1
         if multi is not None and game.pseudo in multi.players and multi.players.index(game.pseudo) == 1:
-            img = 'circle'
+            img = 'circle' + list_theme[Sprite.current_theme_ext]
         else:
-            img = 'cross'
+            img = 'cross' + list_theme[Sprite.current_theme_ext]
         if game.getSpriteByName(f'sp-{i}-{j}') is None:
             for sprite in game.sprites:
                 if sprite.name == f'case-{i}-{j}':
@@ -271,9 +272,9 @@ class Client:
         game.playing = 1
 
         if multi is not None and game.pseudo in multi.players and multi.players.index(game.pseudo) == 0:
-            img = 'circle'
+            img = 'circle' + list_theme[Sprite.current_theme_ext]
         else:
-            img = 'cross'
+            img = 'cross' + list_theme[Sprite.current_theme_ext]
         if game.getSpriteByName(f'sp-{i}-{j}') is None:
             for sprite in game.sprites:
                 if sprite.name == f'case-{i}-{j}':
@@ -297,9 +298,9 @@ class Client:
         game.playing = -1
 
         if multi is not None and game.pseudo in multi.players and multi.players.index(game.pseudo) == 0:
-            img = 'circle'
+            img = 'circle' + list_theme[Sprite.current_theme_ext]
         else:
-            img = 'cross'
+            img = 'cross' + list_theme[Sprite.current_theme_ext]
 
         if game.getSpriteByName(f'sp-{i}-{j}') is None:
             for sprite in game.sprites:
@@ -542,6 +543,10 @@ class Game:
             self.sprites.append(Button((100, 300), (150, 75), "Multi", name="boutton-multi"))
             self.sprites.append(Button((300, 300), (150, 75), "Quitter", name="boutton-quitter"))
             self.sprites.append(Sprite((100, 0), (400, 200), Sprite.image("Title"), "title"))
+            self.sprites.append(Sprite((100, 400), (80, 80), Sprite.image("fleche"), "fleche-gauche"))
+            self.sprites.append(Sprite((400, 400), (80, 80), Sprite.image("fleche", rotate=180), "fleche-droite"))
+            self.sprites.append(Sprite((200, 400), (80, 80), Sprite.image('circle' + list_theme[Sprite.current_theme_ext]), "circle"))
+            self.sprites.append(Sprite((300, 400), (80, 80), Sprite.image('cross' + list_theme[Sprite.current_theme_ext]), "cross"))
         elif self.whichMenu == 1:
             # Jouer contre IA
             self.sprites.append(Button((80, 150), (200, 100), 'Facile', name='button-easy'))
@@ -627,6 +632,21 @@ class Game:
                     self.whichMenu = 2
                 if sprite.name == "boutton-multi":
                     self.whichMenu = 3
+                if sprite.name[:6] == "fleche":
+                    if sprite.name == "fleche-gauche":
+                        Sprite.current_theme_ext = (Sprite.current_theme_ext - 1) % len(list_theme)
+                    if sprite.name == "fleche-droite":
+                        Sprite.current_theme_ext = (Sprite.current_theme_ext + 1) % len(list_theme)
+                    self.sprites.remove(self.getSpriteByName('circle'))
+                    self.sprites.remove(self.getSpriteByName('cross'))
+                    self.sprites.append(
+                        Sprite((300, 400), (80, 80),
+                               Sprite.image('cross' + list_theme[Sprite.current_theme_ext]), "circle")
+                    )
+                    self.sprites.append(
+                        Sprite((200, 400), (80, 80),
+                               Sprite.image('circle' + list_theme[Sprite.current_theme_ext]), "cross")
+                    )
 
             # Il faudrait move ce truc autre part, car il se répète sur tout les Game Main
             if isinstance(sprite.image, GIFImage):
@@ -676,9 +696,9 @@ class Game:
                     i, j = int(t[0]), int(t[1])
                     if self.grid.is_empty(i, j):
                         if self.playing == 1:
-                            img = 'circle'
+                            img = 'circle' + list_theme[Sprite.current_theme_ext]
                         else:
-                            img = 'cross'
+                            img = 'cross' + list_theme[Sprite.current_theme_ext]
                         self.sprites.append(
                             Sprite(
                                 (sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
@@ -699,10 +719,10 @@ class Game:
 
         if self.playing == 1:
             player = 1
-            img = Sprite.image('circle', size=(30, 30))
+            img = Sprite.image('circle' + list_theme[Sprite.current_theme_ext], size=(30, 30))
         else:
             player = 2
-            img = Sprite.image('cross', size=(30, 30))
+            img = Sprite.image('cross' + list_theme[Sprite.current_theme_ext], size=(30, 30))
 
         if self.won:
             who_won = self.grid.who_won()  # -1 0 ou 1
@@ -784,7 +804,7 @@ class Game:
                 elif sprite.name.startswith('button-join-') and not self.creation and not self.view_data:
                     game = sprite.name.replace('button-join-', '', 1)
                     MultiGame.join(self.pseudo, game, self.client)
-                elif sprite.name == 'button-create' and not self.creation:
+                elif sprite.name == 'button-create' and not self.creation and not self.view_data:
                     self.creation = True
                     self.sprites.append(Sprite((50, 50), (500, 500), Sprite.image('create-bg'), 'create-bg'))
                     self.sprites.append(Sprite((470, 78), (50, 50), Sprite.image('close'), name='create-close'))
@@ -818,17 +838,18 @@ class Game:
             txt = text_surface.render("Meilleurs Joueurs:", False, (0, 0, 0))
             self.screen.blit(txt, (95, 110))
             txt = text_surface.render("Joueurs les plus accros:", False, (0, 0, 0))
-            self.screen.blit(txt, (95, 110 + 30*7))
+            self.screen.blit(txt, (95, 110 + 30 * 7))
+            score_colors = [(255, 215, 0), (192, 192, 192), (106, 82, 17), (0, 0, 0), (0, 0, 0)]
             for knd, k in enumerate((Game.stored_data[:5], Game.stored_data[5:])):
                 for ind, i in enumerate(k):
-                    txt = text_surface.render(i[0], False, (0, 0, 0))
-                    self.screen.blit(txt, (130, 140 + ind * 30+ 30*7*knd))
-                    txt = text_surface.render(str(i[1]), False, (0, 0, 0))
-                    self.screen.blit(txt, (130 + 140, 140 + ind * 30+ 30*7*knd))
-                    txt = text_surface.render(str(i[2]), False, (0, 0, 0))
-                    self.screen.blit(txt, (130+220, 140 + ind * 30+ 30*7*knd))
-                    txt = text_surface.render(f'{round(i[1]/i[2]*100)}%', False, (0, 0, 0))
-                    self.screen.blit(txt, (130 + 300, 140 + ind * 30+ 30*7*knd))
+                    txt = text_surface.render(i[0], False, score_colors[ind])
+                    self.screen.blit(txt, (130, 140 + ind * 30 + 30 * 7 * knd))
+                    txt = text_surface.render(str(i[1]), False, score_colors[ind])
+                    self.screen.blit(txt, (130 + 140, 140 + ind * 30 + 30 * 7 * knd))
+                    txt = text_surface.render(str(i[2]), False, score_colors[ind])
+                    self.screen.blit(txt, (130 + 220, 140 + ind * 30 + 30 * 7 * knd))
+                    txt = text_surface.render(f'{round(i[1] / i[2] * 100)}%', False, score_colors[ind])
+                    self.screen.blit(txt, (130 + 300, 140 + ind * 30 + 30 * 7 * knd))
 
     def multiGameMenu(self):
         multi: MultiGame = MultiGame.getGameByName(self.game_name)
@@ -882,9 +903,9 @@ class Game:
                 txt = "C'est à l'adversaire de jouer"
 
             if self.pseudo in multi.players and multi.players.index(self.pseudo) == 1:
-                img = Sprite.image('circle', size=(30, 30))
+                img = Sprite.image('circle' + list_theme[Sprite.current_theme_ext], size=(30, 30))
             else:
-                img = Sprite.image('cross', size=(30, 30))
+                img = Sprite.image('cross' + list_theme[Sprite.current_theme_ext], size=(30, 30))
 
             if self.won:
                 if self.winner == 1:
@@ -963,7 +984,8 @@ class Game:
 
         self.sprites.append(
             Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)),
+                   Sprite.image('cross' + list_theme[Sprite.current_theme_ext]), name='temp'))
 
     def play_normal(self):
         self.playing *= -1
@@ -991,7 +1013,8 @@ class Game:
 
         self.sprites.append(
             Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)),
+                   Sprite.image('cross' + list_theme[Sprite.current_theme_ext]), name='temp'))
 
         return None, None
 
@@ -1045,7 +1068,8 @@ class Game:
 
         self.sprites.append(
             Sprite((sprite.pos[0] + int(sprite.size[0] * 0.1), sprite.pos[1] + int(sprite.size[1] * 0.1)),
-                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)), Sprite.image('cross'), name='temp'))
+                   (int(sprite.size[0] * 0.8), int(sprite.size[1] * 0.8)),
+                   Sprite.image('cross' + list_theme[Sprite.current_theme_ext]), name='temp'))
 
         return None, None
 
